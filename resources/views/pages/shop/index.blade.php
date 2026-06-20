@@ -1,0 +1,344 @@
+@extends('layouts.app')
+@section('content')
+    {{-- @include('components.head-banner') --}}
+
+    <div id="shop" class="shop-area shop-page-responsive  pb-100" data-feedback-id="shop.page"
+        data-component="ShopPage">
+        <div class="container">
+            <div class="row flex-row-reverse">
+                <div class="col-lg-9">
+                    <div class="shop-topbar-wrapper mb-40">
+                        <div class="shop-topbar-left">
+                            <div class="showing-item">
+                                <span>
+                                    {{ 'Showing ' . $products->currentPage() * 9 - 8 . ' - ' . $products->currentPage() * 9 . ' of ' . $products->total() . ' results' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="shop-topbar-right">
+                            <div class="shop-sorting-area">
+                                <select id="sort-product" class="nice-select nice-select-style-1">
+                                    <option value="default"
+                                        @if ($sorted_by == 'default') @selected(true) @endif>Default
+                                        Sorting</option>
+                                    <option value="price_asc"
+                                        @if ($sorted_by == 'price_asc') @selected(true) @endif>Sort by price
+                                        ascending</option>
+                                    <option value="price_desc"
+                                        @if ($sorted_by == 'price_desc') @selected(true) @endif>Sort by price
+                                        descending</option>
+                                    <option value="latest"
+                                        @if ($sorted_by == 'latest') @selected(true) @endif>Sort
+                                        by latest</option>
+                                    <option value="oldest"
+                                        @if ($sorted_by == 'oldest') @selected(true) @endif>Sort
+                                        by oldest</option>
+                                </select>
+                            </div>
+                            <div class="shop-view-mode nav">
+                                <a class="active" href="#shop-1" data-bs-toggle="tab"><i class=" ti-layout-grid3 "></i> </a>
+                                <a href="#shop-2" data-bs-toggle="tab" class=""><i class=" ti-view-list-alt "></i></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="shop-bottom-area">
+                        <div class="tab-content jump">
+                            <div id="shop-1" class="tab-pane active">
+                                <div id="product-list" class="row">
+                                    @foreach ($products as $product)
+                                        @php
+                                            $detailed_product = $product->detailed_product;
+                                            $isWishlisted = ($wishlistProductIds ?? collect())->contains((int) $product->product_id);
+                                            $isCompared = ($compareProductIds ?? collect())->contains((int) $product->product_id);
+                                        @endphp
+                                        <div class="col-lg-4 col-md-4 col-sm-6 col-12">
+                                            <div class="product-wrap mb-35" data-feedback-id="shop.product-card.{{ $product->product_id }}"
+                                                data-component="ProductCard" data-product-id="{{ $product->product_id }}">
+                                                <div class="custom-product-img product-img img-zoom mb-25">
+                                                    <a href="/products/{{ $product->product_id }}">
+                                                        <img src="{{ $detailed_product->image }}" alt="{{ $product->name }}"
+                                                            style="height: 275px" data-feedback-id="shop.product-image.{{ $product->product_id }}">
+                                                    </a>
+                                                    <div class="product-badge badge-top badge-right badge-pink">
+                                                        <span>{{ $detailed_product->total_discount_percentage != 0 ? '-' . $detailed_product->total_discount_percentage . '%' : '' }}</span>
+                                                    </div>
+                                                    @if ($product->total_quantities == 0)
+                                                        <div
+                                                            class="custom-product-badge product-badge badge-top badge-left badge-pink">
+                                                            <span>Sold out</span>
+                                                        </div>
+                                                    @endif
+                                                    <div class="product-action-wrap">
+                                                        <form method="POST" action="{{ route('wishlist.store') }}" class="wishlist-inline-form">
+                                                            @csrf
+                                                            <input type="hidden" name="product_id" value="{{ $product->product_id }}">
+                                                            <button type="submit"
+                                                                class="js-wishlist-toggle product-action-btn-1 @if ($isWishlisted) active @endif"
+                                                                data-product-id="{{ $product->product_id }}" title="Wishlist">
+                                                                <i class="pe-7s-like"></i>
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" action="{{ route('compare.store') }}" class="compare-inline-form">
+                                                            @csrf
+                                                            <input type="hidden" name="product_id" value="{{ $product->product_id }}">
+                                                            <button type="submit"
+                                                                class="js-compare-toggle product-action-btn-1 @if ($isCompared) active @endif"
+                                                                data-product-id="{{ $product->product_id }}" title="Compare">
+                                                                <i class="pe-7s-shuffle"></i>
+                                                            </button>
+                                                        </form>
+                                                        <a href="/products/{{ $product->product_id }}"
+                                                            class="product-action-btn-1" title="Quick View">
+                                                            <i class="pe-7s-look"></i>
+                                                        </a>
+                                                    </div>
+                                                    @if ($product->total_quantities > 0)
+                                                        <div class="product-action-2-wrap ">
+                                                            <button data-sku="{{ $detailed_product->sku }}"
+                                                                data-color-name="{{ $detailed_product->color_name }}"
+                                                                data-color-code="{{ $detailed_product->color_code }}"
+                                                                data-image="{{ $detailed_product->image }}"
+                                                                data-feedback-id="shop.add-to-cart.{{ $product->product_id }}"
+                                                                class="js-add-to-cart-shop product-action-btn-2"
+                                                                title="Add To Cart"><i class="pe-7s-cart"></i> Add to
+                                                                cart</button>
+                                                        </div>
+                                                    @endif
+
+                                                </div>
+                                                <div class="product-content">
+                                                    <h3><a>{{ $product->name }}</a>
+                                                    </h3>
+                                                    <div class="product-price" data-feedback-id="shop.product-price.{{ $product->product_id }}">
+                                                        @if ($detailed_product->total_discount_percentage > 0)
+                                                            <span class="old-price">
+                                                                {{ number_format($detailed_product->original_price, 0, '.', ',') }}đ
+                                                            </span>
+                                                        @endif
+                                                        <span class="new-price">
+                                                            {{ number_format($detailed_product->original_price - ($detailed_product->original_price * $detailed_product->total_discount_percentage) / 100, 0, '.', ',') }}đ
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+
+                                </div>
+                            </div>
+                            <div id="shop-2" class="tab-pane">
+                                <div id="product-list-view">
+                                    @foreach ($products as $product)
+                                        @php
+                                            $detailed_product = $product->detailed_product;
+                                            $isWishlisted = ($wishlistProductIds ?? collect())->contains((int) $product->product_id);
+                                            $isCompared = ($compareProductIds ?? collect())->contains((int) $product->product_id);
+                                            $final_price =
+                                                $detailed_product->original_price -
+                                                ($detailed_product->original_price *
+                                                    $detailed_product->total_discount_percentage) /
+                                                    100;
+                                        @endphp
+                                        <div class="shop-list-wrap mb-35" data-feedback-id="shop.product-list-card.{{ $product->product_id }}"
+                                            data-component="ProductListCard" data-product-id="{{ $product->product_id }}">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-4 col-sm-5">
+                                                    <div class="product-list-img">
+                                                        <a href="/products/{{ $product->product_id }}">
+                                                            <img src="{{ $detailed_product->image }}" alt="{{ $product->name }}"
+                                                                style="height: 240px; object-fit: cover;"
+                                                                data-feedback-id="shop.product-list-image.{{ $product->product_id }}">
+                                                        </a>
+                                                        <div class="product-list-badge badge-right badge-pink">
+                                                            <span>{{ $detailed_product->total_discount_percentage != 0 ? '-' . $detailed_product->total_discount_percentage . '%' : '' }}</span>
+                                                        </div>
+                                                        <div class="product-list-quickview">
+                                                            <a href="/products/{{ $product->product_id }}"
+                                                                class="product-action-btn-2" title="Quick View">
+                                                                <i class="pe-7s-look"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-8 col-sm-7">
+                                                    <div class="shop-list-content">
+                                                        <h3><a href="/products/{{ $product->product_id }}">{{ $product->name }}</a></h3>
+                                                        <div class="product-price mb-2"
+                                                            data-feedback-id="shop.product-list-price.{{ $product->product_id }}">
+                                                            @if ($detailed_product->total_discount_percentage > 0)
+                                                                <span class="old-price">
+                                                                    {{ number_format($detailed_product->original_price, 0, '.', ',') }}đ
+                                                                </span>
+                                                            @endif
+                                                            <span class="new-price">
+                                                                {{ number_format($final_price, 0, '.', ',') }}đ
+                                                            </span>
+                                                        </div>
+                                                        <p>{{ \Illuminate\Support\Str::limit($product->description ?? $detailed_product->description ?? 'View product details for materials, color and stock information.', 160) }}</p>
+                                                        <div class="product-list-action">
+                                                            <a href="/products/{{ $product->product_id }}"
+                                                                class="product-action-btn-3" title="View Details">
+                                                                <i class="pe-7s-look"></i>
+                                                            </a>
+                                                            <form method="POST" action="{{ route('wishlist.store') }}" class="wishlist-inline-form">
+                                                                @csrf
+                                                                <input type="hidden" name="product_id" value="{{ $product->product_id }}">
+                                                                <button type="submit"
+                                                                    class="js-wishlist-toggle product-action-btn-3 @if ($isWishlisted) active @endif"
+                                                                    data-product-id="{{ $product->product_id }}" title="Wishlist">
+                                                                    <i class="pe-7s-like"></i>
+                                                                </button>
+                                                            </form>
+                                                            <form method="POST" action="{{ route('compare.store') }}" class="compare-inline-form">
+                                                                @csrf
+                                                                <input type="hidden" name="product_id" value="{{ $product->product_id }}">
+                                                                <button type="submit"
+                                                                    class="js-compare-toggle product-action-btn-3 @if ($isCompared) active @endif"
+                                                                    data-product-id="{{ $product->product_id }}" title="Compare">
+                                                                    <i class="pe-7s-shuffle"></i>
+                                                                </button>
+                                                            </form>
+                                                            @if ($product->total_quantities > 0)
+                                                                <button data-sku="{{ $detailed_product->sku }}"
+                                                                    data-color-name="{{ $detailed_product->color_name }}"
+                                                                    data-color-code="{{ $detailed_product->color_code }}"
+                                                                    data-image="{{ $detailed_product->image }}"
+                                                                    data-feedback-id="shop.product-list-add-to-cart.{{ $product->product_id }}"
+                                                                    class="js-add-to-cart-shop product-action-btn-3"
+                                                                    title="Add To Cart">
+                                                                    <i class="pe-7s-cart"></i>
+                                                                </button>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pagination-style-1">
+                            {{ $products->render('pages.shop.pagination') }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="sidebar-wrapper" data-feedback-id="shop.filters" data-component="ShopFilters">
+                        <div class="sidebar-widget mb-40">
+                            <div class="search-wrap-2">
+                                <form class="search-2-form" action="#">
+                                    <input id="search-input" placeholder="Search products..." type="text"
+                                        value="{{ $search }}">
+                                    <button class="button-search"><i class=" ti-search "></i></button>
+                                </form>
+                            </div>
+                        </div>
+
+
+                        <div class="sidebar-widget sidebar-widget-border mb-40 pb-35">
+                            <div class="sidebar-widget-title mb-25">
+                                <h3>Product Categories</h3>
+                            </div>
+                            <div class="sidebar-list-style">
+                                <div class="categories-select">
+                                    @if ($selected_category == 'all' || $selected_category == null)
+                                        <div class="category-selected" data-category-id="all">All</div>
+                                    @else
+                                        @foreach ($categories as $category)
+                                            @if ($selected_category == $category->category_id)
+                                                <div class="category-selected" data-category-id="{{ $selected_category }}">
+                                                    {{ $category->name }}</div>
+                                            @endif
+                                        @endforeach
+                                    @endif
+
+                                    <div class="categories-options">
+                                        <div class="option" data-category-id="all">All</div>
+
+                                        @foreach ($categories as $category)
+                                            <div class="option" data-category-id="{{ $category->category_id }}">
+                                                {{ $category->name }}
+                                            </div>
+                                        @endforeach
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="sidebar-widget sidebar-widget-border mb-40 pb-35">
+                            <div class="sidebar-widget-title mb-30">
+                                <h3>Filter By Price</h3>
+                            </div>
+                            <div class="price-filter">
+                                <div class="price-input">
+                                    <div class="field">
+                                        <input type="text" class="input-min" value="0đ" data-value="0" readonly>
+                                    </div>
+                                    <div class="separator">-</div>
+                                    <div class="field">
+                                        <input type="text" class="input-max" value="60,000,000đ" data-value="60000000"
+                                            readonly>
+                                    </div>
+                                </div>
+                                <div class="slider">
+                                    <div class="progress"></div>
+                                </div>
+                                <div class="range-input">
+                                    <input type="range" name="" id="min" class="range-min"
+                                        min="0" max="60000000" value="0">
+                                    <input type="range" name="" id="max" class="range-max"
+                                        min="0" max="60000000" value="60000000">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-widget sidebar-widget-border mb-40 pb-35">
+                            <div class="sidebar-widget-title mb-25">
+                                <h3>Choose Colour</h3>
+                            </div>
+                            <div class="sidebar-widget-color sidebar-list-style">
+                                <div class="row g-2">
+                                    @foreach ($colors as $color)
+                                        <div class="col-auto">
+                                            <label class="form-colorinput form-colorinput-light">
+                                                <input name="color" type="checkbox" value=""
+                                                    class="form-colorinput-input" data-id="{{ $color->color_id }}"
+                                                    @if (in_array($color->color_id, $selected_colors)) @checked(true) @endif />
+                                                <span class="form-colorinput-color "
+                                                    style="background-color: {{ $color->code }}"></span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sidebar-widget">
+                            <div class="sidebar-widget-title mb-25">
+                                <h3>Tags</h3>
+                            </div>
+                            <div class="sidebar-widget-tag">
+                                <div class="row g-2">
+                                    @foreach ($tags as $tag)
+                                        <div class="col-auto">
+                                            <label class="form-taginput form-taginput-light">
+                                                <input name="color" type="checkbox" value="white"
+                                                    class="form-taginput-input" data-id="{{ $tag->tag_id }}"
+                                                    @if (in_array($tag->tag_id, $selected_tags)) @checked(true) @endif />
+                                                <span class="form-taginput-tag">#{{ $tag->name }}</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
