@@ -16,6 +16,7 @@ use App\Http\Controllers\CompareController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\HotDealController;
 use App\Http\Controllers\PagesController;
+use App\Http\Controllers\Payment\VnpayController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductRecommendationController;
 use App\Http\Controllers\DiscountController;
@@ -76,6 +77,10 @@ Route::get('/sitemap-products.xml', [SitemapController::class, 'products'])->nam
 Route::get('/sitemap-categories.xml', [SitemapController::class, 'categories'])->name('sitemap.categories');
 Route::get('/sitemap-collections.xml', [SitemapController::class, 'collections'])->name('sitemap.collections');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+Route::get('/payment/vnpay/return', [VnpayController::class, 'return'])->name('vnpay.return');
+Route::get('/payment/vnpay/ipn', [VnpayController::class, 'ipn'])
+    ->middleware('throttle:120,1')
+    ->name('vnpay.ipn');
 
 Route::middleware(['auth'])->group(function () {
     Route::post('/feedback', [VisualFeedbackController::class, 'store'])
@@ -138,6 +143,7 @@ Route::middleware([PrivateMiddleware::class])->group(function () {
     Route::post('/account/profile/addresscard/remove', [AddressController::class, 'remove_address']);
     // checkout
     Route::post('/checkout', [OrderController::class, 'checkout_order'])->name('checkout');
+    Route::post('/checkout/vnpay', [OrderController::class, 'checkout_order'])->name('vnpay.create');
     Route::get('/checkout/{order_id}', [PagesController::class, 'handle_checkout_order'])->name('checkout.handle');
 
     // my orders

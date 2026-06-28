@@ -1,0 +1,171 @@
+<?php
+
+namespace App\Http\Controllers\Payment;
+
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Services\Payments\VnpayService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
+
+class VnpayController extends Controller
+{
+    public function return(Request $request, VnpayService $vnpay)
+    {
+        $payload = $request->query();
+        $validSignature = false;
+        $payment = null;
+
+        if (!empty($payload)) {
+            try {
+                $validSignature = $vnpay->verifyCallback($payload);
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+
+            $payment = Payment::with('order')
+                ->where('provider', Payment::PROVIDER_VNPAY)
+                ->where('transaction_reference', (string) ($payload['vnp_TxnRef'] ?? ''))
+                ->first();
+        }
+
+        $status = 'invalid';
+        if ($validSignature && $payment) {
+            if ($payment->status === Payment::STATUS_PAID || $payment->order?->payment_status === Order::PAYMENT_STATUS_PAID) {
+                $status = 'success';
+            } elseif (($payload['vnp_ResponseCode'] ?? null) === '24') {
+                $status = 'cancelled';
+            } elseif (($payload['vnp_ResponseCode'] ?? null) === '00') {
+                $status = 'pending';
+            } else {
+                $status = 'failed';
+            }
+        } elseif (!empty($payload) && !$payment) {
+            $status = 'not_found';
+        }
+
+        return view('pages.payment.vnpay-return', [
+            'page' => 'VNPay Payment Result',
+            'status' => $status,
+            'payment' => $payment,
+            'order' => $payment?->order,
+            'payload' => $payload,
+            'validSignature' => $validSignature,
+        ]);
+    }
+
+    public function ipn(Request $request, VnpayService $vnpay): JsonResponse
+    {
+        $payload = $request->query();
+        $transactionReference = (string) ($payload['vnp_TxnRef'] ?? '');
+
+        try {
+            if (!$vnpay->verifyCallback($payload)) {
+                $this->logIpn($transactionReference, null, $payload, 'invalid_signature');
+
+                return $this->vnpayResponse('97', 'Invalid signature');
+            }
+
+            return DB::transaction(function () use ($payload, $transactionReference, $vnpay) {
+                $payment = Payment::with('order')
+                    ->where('provider', Payment::PROVIDER_VNPAY)
+                    ->where('transaction_reference', $transactionReference)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$payment || !$payment->order) {
+                    $this->logIpn($transactionReference, null, $payload, 'payment_not_found');
+
+                    return $this->vnpayResponse('01', 'Order not found');
+                }
+
+                $callbackAmount = $vnpay->fromVnpayAmount($payload['vnp_Amount'] ?? null);
+                $paymentAmount = (int) round((float) $payment->amount);
+                $orderAmount = (int) round((float) $payment->order->total_price);
+
+                if ($callbackAmount === null || $callbackAmount !== $paymentAmount || $callbackAmount !== $orderAmount) {
+                    $this->storeCallback($payment, $payload, Payment::STATUS_FAILED);
+                    $this->logIpn($transactionReference, $payment->order_id, $payload, 'invalid_amount');
+
+                    return $this->vnpayResponse('04', 'Invalid amount');
+                }
+
+                if ($payment->isPaid()) {
+                    $this->logIpn($transactionReference, $payment->order_id, $payload, 'already_paid');
+
+                    return $this->vnpayResponse('02', 'Order already confirmed');
+                }
+
+                $paymentStatus = $vnpay->paymentStatusFor($payload);
+                $this->storeCallback($payment, $payload, $paymentStatus);
+
+                if ($paymentStatus === Payment::STATUS_PAID) {
+                    $paidAt = now();
+                    $payment->forceFill([
+                        'paid_at' => $paidAt,
+                    ])->save();
+
+                    $payment->order->update([
+                        'is_paid' => true,
+                        'payment_method' => Order::PAYMENT_METHOD_VNPAY,
+                        'payment_status' => Order::PAYMENT_STATUS_PAID,
+                        'paid_at' => $paidAt,
+                    ]);
+                } else {
+                    $payment->order->update([
+                        'is_paid' => false,
+                        'payment_method' => Order::PAYMENT_METHOD_VNPAY,
+                        'payment_status' => $paymentStatus === Payment::STATUS_CANCELLED
+                            ? Order::PAYMENT_STATUS_CANCELLED
+                            : Order::PAYMENT_STATUS_FAILED,
+                    ]);
+                }
+
+                $this->logIpn($transactionReference, $payment->order_id, $payload, $paymentStatus);
+
+                return $this->vnpayResponse('00', 'Confirm Success');
+            });
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->logIpn($transactionReference, null, $payload, 'exception');
+
+            return $this->vnpayResponse('99', 'Unknown error');
+        }
+    }
+
+    private function storeCallback(Payment $payment, array $payload, string $status): void
+    {
+        $payment->update([
+            'provider_transaction_id' => $payload['vnp_TransactionNo'] ?? $payment->provider_transaction_id,
+            'status' => $status,
+            'response_code' => $payload['vnp_ResponseCode'] ?? null,
+            'transaction_status' => $payload['vnp_TransactionStatus'] ?? null,
+            'bank_code' => $payload['vnp_BankCode'] ?? null,
+            'card_type' => $payload['vnp_CardType'] ?? null,
+            'callback_payload' => $payload,
+        ]);
+    }
+
+    private function vnpayResponse(string $code, string $message): JsonResponse
+    {
+        return response()->json([
+            'RspCode' => $code,
+            'Message' => $message,
+        ]);
+    }
+
+    private function logIpn(string $transactionReference, ?int $orderId, array $payload, string $result): void
+    {
+        Log::info('vnpay.ipn', [
+            'transaction_reference' => $transactionReference,
+            'order_id' => $orderId,
+            'response_code' => $payload['vnp_ResponseCode'] ?? null,
+            'transaction_status' => $payload['vnp_TransactionStatus'] ?? null,
+            'result' => $result,
+        ]);
+    }
+}

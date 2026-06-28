@@ -555,38 +555,12 @@ class PagesController extends Controller
         $data = [
             'page' => 'Checkout Success',
         ];
-        if (isset($request->vnp_ResponseCode)) {
-            if ($request->vnp_ResponseCode == '00') {
-                if ($order) {
-                    $order->update([
-                        'is_paid' => true,
-                    ]);
-                    $order->get_status = $order->get_status();
-                    $data['order'] = $order;
-                }
-                return view('pages.checkout.success', $data);
-            } else {
-                // Increase the quantities of the product details
-                foreach ($order->order_details as $order_detail) {
-                    $product_detail = ProductDetail::where('sku', $order_detail->detailed_product->sku)->first();
-                    $product_detail->update([
-                        'quantities' => $product_detail->quantities + $order_detail->quantities,
-                    ]);
-                }
-
-                // Delete the order details and the order
-                $order->order_details()->delete();
-                $order->delete();
-                $data['page'] = 'Checkout Fail';
-                return view('pages.checkout.fail', $data);
-            }
-        } else {
-            if ($order) {
-                $order->get_status = $order->get_status();
-                $data['order'] = $order;
-            }
-            return view('pages.checkout.success', $data);
+        if ($order) {
+            $order->get_status = $order->get_status();
+            $data['order'] = $order;
         }
+
+        return view('pages.checkout.success', $data);
     }
     public function my_orders()
     {

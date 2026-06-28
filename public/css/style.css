@@ -12098,7 +12098,7 @@ textarea {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin: -12px 0 28px;
+    margin: 12px 0 28px;
 }
 
 .product-secondary-btn {
@@ -12110,6 +12110,38 @@ textarea {
     display: inline-flex;
     gap: 8px;
     padding: 10px 16px;
+}
+
+.product-details-content .product-secondary-actions {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 12px 0 28px;
+}
+
+.product-details-content .product-secondary-actions form {
+    margin: 0;
+    min-width: 0;
+}
+
+.product-details-content .product-secondary-btn {
+    font-size: 14px;
+    font-weight: 700;
+    justify-content: center;
+    min-height: 50px;
+    padding: 0 16px;
+    text-align: center;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.product-details-content .product-secondary-btn:hover {
+    border-color: #e97730;
+    color: #e97730;
+}
+
+.product-details-content .product-secondary-btn.active:hover {
+    color: #fff !important;
 }
 
 .wishlist-card {
@@ -12578,6 +12610,10 @@ textarea {
 }
 
 @media only screen and (max-width: 767px) {
+    .product-details-content .product-secondary-actions {
+        grid-template-columns: 1fr;
+    }
+
     .product-secondary-actions {
         flex-direction: column;
     }

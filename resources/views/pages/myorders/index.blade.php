@@ -25,6 +25,7 @@
                                     </p>
                                     <div class="tags">
                                         <div class="status-tag">Your order is <span>{{ $order->get_status() }}</span></div>
+                                        <div class="status-tag">Payment <span>{{ $order->get_is_paid() }}</span></div>
                                     </div>
                                 </div>
                                 <div class="content">

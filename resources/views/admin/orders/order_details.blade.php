@@ -63,6 +63,11 @@
                                     class="m-0">{{ $order->order_id }}</span><br>
                                 <strong>Status: </strong>{{ $order->get_status() }}<br>
                                 <strong>Paid: </strong>{{ $order->get_is_paid() }}<br>
+                                <strong>Payment method: </strong>{{ strtoupper($order->payment_method ?? 'cod') }}<br>
+                                <strong>Payment status: </strong>{{ $order->payment_status ?? ($order->is_paid ? 'paid' : 'unpaid') }}<br>
+                                @if ($order->paid_at)
+                                    <strong>Paid at: </strong>{{ $order->paid_at }}<br>
+                                @endif
                                 <strong>Total price:
                                 </strong>
                                 <span

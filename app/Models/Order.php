@@ -9,9 +9,38 @@ use Carbon\Carbon;
 class Order extends Model
 {
     use HasFactory;
+
+    public const PAYMENT_METHOD_COD = 'cod';
+    public const PAYMENT_METHOD_VNPAY = 'vnpay';
+
+    public const PAYMENT_STATUS_UNPAID = 'unpaid';
+    public const PAYMENT_STATUS_PENDING = 'pending';
+    public const PAYMENT_STATUS_PAID = 'paid';
+    public const PAYMENT_STATUS_FAILED = 'failed';
+    public const PAYMENT_STATUS_CANCELLED = 'cancelled';
+    public const PAYMENT_STATUS_REFUNDED = 'refunded';
+
     protected $table = 'orders';
     protected $primaryKey = 'order_id';
-    protected $fillable = ['total_price', 'is_paid', 'status', 'receiver_name', 'address', 'phone_number', 'note', 'customer_id', 'created_by'];    //mảng các trường có thể tác động
+    protected $fillable = [
+        'total_price',
+        'is_paid',
+        'payment_method',
+        'payment_status',
+        'paid_at',
+        'status',
+        'receiver_name',
+        'address',
+        'phone_number',
+        'note',
+        'customer_id',
+        'created_by',
+    ];
+
+    protected $casts = [
+        'is_paid' => 'boolean',
+        'paid_at' => 'datetime',
+    ];
 
     // status: 0: unconfirmed, 1: confirmed, 2: in transit, 3: delivered, 4: canceled
     public function get_status()
@@ -33,11 +62,33 @@ class Order extends Model
     }
     public function get_is_paid()
     {
+        if ($this->payment_status === self::PAYMENT_STATUS_FAILED) {
+            return 'Payment Failed';
+        }
+
+        if ($this->payment_status === self::PAYMENT_STATUS_CANCELLED) {
+            return 'Payment Canceled';
+        }
+
+        if ($this->payment_status === self::PAYMENT_STATUS_PENDING) {
+            return 'Payment Pending';
+        }
+
         return $this->is_paid ? 'Payment Received' : 'Pending Payment';
     }
     public function order_details()
     {
         return $this->hasMany(OrderDetail::class, 'order_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'order_id', 'order_id');
+    }
+
+    public function latest_payment()
+    {
+        return $this->hasOne(Payment::class, 'order_id', 'order_id')->latestOfMany();
     }
     public function employee()
     {

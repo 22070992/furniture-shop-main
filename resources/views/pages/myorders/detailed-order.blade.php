@@ -65,6 +65,12 @@
                     <div class="col-4 checkout-right">
                         @if ($order->is_paid)
                             <div class="paid-tag">Paid</div>
+                        @elseif ($order->payment_status === \App\Models\Order::PAYMENT_STATUS_PENDING)
+                            <div class="paid-tag unpaid">Pending Payment</div>
+                        @elseif ($order->payment_status === \App\Models\Order::PAYMENT_STATUS_FAILED)
+                            <div class="paid-tag unpaid">Payment Failed</div>
+                        @elseif ($order->payment_status === \App\Models\Order::PAYMENT_STATUS_CANCELLED)
+                            <div class="paid-tag unpaid">Payment Canceled</div>
                         @else
                             <div class="paid-tag unpaid">Unpaid</div>
                         @endif
@@ -77,6 +83,10 @@
                                 <h3>Delivery address</h3>
                                 <p>{{ $order->receiver_name }} {{ $order->phone_number }}</p>
                                 <p>{{ $order->address }}</p>
+                            </div>
+                            <div class="delivery-address">
+                                <h3>Payment</h3>
+                                <p>{{ strtoupper($order->payment_method ?? 'cod') }} - {{ $order->get_is_paid() }}</p>
                             </div>
                             <div class="order-summary">
                                 <h3>order summary</h3>

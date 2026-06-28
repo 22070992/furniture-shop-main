@@ -138,17 +138,31 @@
                                                     {{ number_format($order->total_price, 0, '.', ',') }}đ
                                                 </td>
                                                 <td>
-                                                    @switch($order->is_paid)
-                                                        @case(0)
-                                                            <span class="badge bg-yellow-lt">Pending Payment</span>
-                                                        @break
-
-                                                        @case(1)
+                                                    @switch($order->payment_status)
+                                                        @case(\App\Models\Order::PAYMENT_STATUS_PAID)
                                                             <span class="badge bg-green-lt">Payment Received</span>
                                                         @break
 
+                                                        @case(\App\Models\Order::PAYMENT_STATUS_PENDING)
+                                                            <span class="badge bg-yellow-lt">Pending Payment</span>
+                                                        @break
+
+                                                        @case(\App\Models\Order::PAYMENT_STATUS_FAILED)
+                                                            <span class="badge bg-red-lt">Payment Failed</span>
+                                                        @break
+
+                                                        @case(\App\Models\Order::PAYMENT_STATUS_CANCELLED)
+                                                            <span class="badge bg-orange-lt">Payment Canceled</span>
+                                                        @break
+
                                                         @default
+                                                            @if ($order->is_paid)
+                                                                <span class="badge bg-green-lt">Payment Received</span>
+                                                            @else
+                                                                <span class="badge bg-yellow-lt">Pending Payment</span>
+                                                            @endif
                                                     @endswitch
+                                                    <div class="text-muted small text-uppercase">{{ $order->payment_method ?? 'cod' }}</div>
                                                 </td>
                                                 <td>
                                                     @switch($order->status)

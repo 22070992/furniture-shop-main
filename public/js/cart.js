@@ -355,7 +355,14 @@ jQuery(document).ready(function () {
     });
     $(document).on('submit', '#checkout-form', function (event) {
         event.preventDefault();
-        let data = $(this).serialize();
+        const form = $(this);
+        const submitButton = form.find('.place-order-btn');
+
+        if (submitButton.data('loading')) {
+            return;
+        }
+
+        let data = form.serialize();
 
         let checkout = JSON.parse(localStorage.getItem('checkout')) || [];
         if (checkout.length === 0) {
@@ -368,6 +375,11 @@ jQuery(document).ready(function () {
             unit_price: convertCurrencyToNumber(item.unit_price + ''),
         }));
         data += `&checkout=${JSON.stringify(checkout)}`;
+        submitButton.data('loading', true);
+        submitButton.addClass('is-loading');
+        submitButton.attr('disabled', true);
+        submitButton.text($('input[name="payment_method"]:checked').val() === 'vnpay' ? 'Redirecting to VNPay...' : 'Placing order...');
+
         $.ajax({
             url: '/checkout',
             method: 'POST',
@@ -392,8 +404,17 @@ jQuery(document).ready(function () {
             },
             error: function (error) {
                 $('#checkout-error').removeClass('d-none');
-                $('#checkout-error').text('*' + Object.values(error.responseJSON.errors)[0][0]);
+                const message = error.responseJSON?.errors
+                    ? Object.values(error.responseJSON.errors)[0][0]
+                    : 'Checkout failed. Please try again.';
+                $('#checkout-error').text('*' + message);
                 console.log(error);
+            },
+            complete: function () {
+                submitButton.data('loading', false);
+                submitButton.removeClass('is-loading');
+                submitButton.attr('disabled', false);
+                submitButton.text('Place order');
             },
         });
     });

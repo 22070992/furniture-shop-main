@@ -111,13 +111,15 @@
                                     <label class="payment-method-label" for="cash-on-delivery">
                                         <i class="fa-solid fa-truck-fast"></i>
                                         <span>Cash on delivery</span>
+                                        <small class="payment-method-copy">Pay with cash when your order is delivered.</small>
                                         <input type="radio" name="payment_method" id="cash-on-delivery"
                                             value="cash-on-delivery" checked>
                                         <div class="mark"></div>
                                     </label>
                                     <label class="payment-method-label" for="payment-with-vnpay">
                                         <i class="fa-solid fa-credit-card"></i>
-                                        <span>Payment with VNPay</span>
+                                        <span>Payment online with VNPay</span>
+                                        <small class="payment-method-copy">You will be redirected to the VNPay Sandbox payment gateway.</small>
                                         <input type="radio" name="payment_method" id="payment-with-vnpay" value="vnpay">
                                         <div class="mark"></div>
                                     </label>
