@@ -124,7 +124,7 @@ Route::middleware([PublicMiddleware::class])->group(function () {
         ->name('ai-interior-combo.cart_items');
     Route::get('/lastproducts', [HotDealController::class, 'get_LastestProduct']);
     Route::get('/bestseller', [HotDealController::class, 'get_BestSeller']);
-    Route::post('/ai-chat', [AiChatController::class, 'reply'])->name('ai-chat.reply');
+    Route::post('/ai-chat', [AiChatController::class, 'reply'])->middleware('throttle:20,1')->name('ai-chat.reply');
 
 
     Route::get('/cart/async', [PagesController::class, 'asyncCart']);

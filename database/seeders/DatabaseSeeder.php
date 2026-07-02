@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             RolesTableSeeder::class,
             AdminUserTableSeeder::class,
             ProductCatalogSeeder::class,
+            ProductTypeAndThemeSeeder::class,
             FurnitureCompletionSeeder::class,
             AdminAnalyticsDemoSeeder::class,
             VisualFeedbackDemoSeeder::class,

@@ -17,14 +17,14 @@
 
         <div class="ai-chatbox-messages" data-ai-chat-messages>
             <div class="ai-chat-message bot">
-                <p>Chào bạn, mình có thể gợi ý sản phẩm theo loại ghế, màu, chất liệu và ngân sách.</p>
+                <p>Chào bạn, hãy mô tả căn phòng, ngân sách, màu sắc hoặc sản phẩm bạn đang cần. Mình sẽ tư vấn theo dữ liệu sản phẩm Furemir.</p>
             </div>
         </div>
 
         <div class="ai-chatbox-quick" data-ai-chat-quick>
-            <button type="button" data-prompt="Ghế văn phòng màu đen">Ghế văn phòng màu đen</button>
-            <button type="button" data-prompt="Ghế treo mây">Ghế treo mây</button>
-            <button type="button" data-prompt="Ghế gấp dưới 3 triệu">Ghế gấp dưới 3 triệu</button>
+            <button type="button" data-prompt="Tư vấn bàn cho phòng khách nhỏ">Tư vấn bàn phòng khách</button>
+            <button type="button" data-prompt="Tôi cần ghế làm việc thoải mái dưới 5 triệu">Ghế làm việc dưới 5 triệu</button>
+            <button type="button" data-prompt="Gợi ý giường và tủ cho phòng ngủ màu sáng">Combo phòng ngủ sáng</button>
         </div>
 
         <form class="ai-chatbox-form" data-ai-chat-form>

@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const quickWrap = widget.querySelector('[data-ai-chat-quick]');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const currency = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+    const conversationHistory = [];
 
     function openChat() {
         panel.hidden = false;
@@ -84,6 +85,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function remember(role, content) {
+        conversationHistory.push({ role, content });
+        while (conversationHistory.length > 10) {
+            conversationHistory.shift();
+        }
+    }
+
     function setLoading(isLoading) {
         input.disabled = isLoading;
         form.querySelector('button').disabled = isLoading;
@@ -95,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         openChat();
         appendMessage('user', cleanMessage);
+        remember('user', cleanMessage);
         input.value = '';
         setLoading(true);
         const typing = appendTyping();
@@ -107,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     Accept: 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                 },
-                body: JSON.stringify({ message: cleanMessage }),
+                body: JSON.stringify({ message: cleanMessage, history: conversationHistory.slice(0, -1) }),
             });
 
             if (!response.ok) {
@@ -116,7 +125,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await response.json();
             typing.remove();
-            appendMessage('bot', data.reply || 'Mình đã nhận được câu hỏi của bạn.');
+            const botReply = data.reply || 'Mình đã nhận được câu hỏi của bạn.';
+            appendMessage('bot', botReply);
+            remember('assistant', botReply);
             appendProducts(data.products);
             renderQuickReplies(data.quick_replies);
         } catch (error) {

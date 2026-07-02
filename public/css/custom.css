@@ -1324,18 +1324,24 @@ input[type='checkbox' i] {
     color: white;
 }
 
-/* Custom categories select */
-.categories-select {
+/* Custom category and product type selects */
+.categories-select,
+.product-types-select {
     border: 1px solid #ccc;
     padding: 8px 12px;
     position: relative;
-    z-index: 99;
+    z-index: 1;
+    background: #fff;
+    cursor: pointer;
 }
-.categories-select:hover .categories-options {
-    opacity: 1;
-    visibility: visible;
+
+.categories-select.is-open,
+.product-types-select.is-open {
+    z-index: 120;
 }
-.categories-select .categories-options {
+
+.categories-select .categories-options,
+.product-types-select .product-types-options {
     display: block;
     position: absolute;
     top: 100%;
@@ -1343,19 +1349,59 @@ input[type='checkbox' i] {
     width: 100%;
     background-color: white;
     border: 1px solid #ccc;
-    z-index: 100;
+    z-index: 121;
+    max-height: 240px;
+    overflow-y: auto;
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(4px);
+    transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s ease;
 }
-.categories-options .option {
+
+.categories-select.is-open .categories-options,
+.product-types-select.is-open .product-types-options {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+.categories-options .option,
+.product-types-options .option {
     padding: 8px 12px;
     border-bottom: 1px solid #ccc;
     transition: 0.1s;
     cursor: pointer;
 }
-.categories-options .option:hover {
+.categories-options .option:hover,
+.product-types-options .option:hover {
     background-color: rgb(233, 119, 48, 0.8);
     color: white;
+}
+
+.product-types-options small {
+    color: inherit;
+    opacity: 0.75;
+}
+
+.product-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: -2px 0 8px;
+}
+
+.product-card-meta span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: #f7eee8;
+    color: #8b4a21;
+    font-size: 12px;
+    line-height: 1.2;
 }
 
 /* Custom edit profile */

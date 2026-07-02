@@ -37,11 +37,21 @@
 
                         <div class="col-3">
                             <select id="categories_select" name="type" class="form-select" title="Choose type">
-                                <option value="all" @if ($selected_category == 'all') selected @endif>All Categories
+                                <option value="all" @if ($selected_category == 'all') selected @endif>All Rooms
                                 </option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->category_id }}"
                                         @if ($selected_category == $category->category_id) selected @endif>{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-2">
+                            <select id="product_types_select" name="product_type" class="form-select" title="Choose product type">
+                                <option value="all" @if ($selected_product_type == 'all') selected @endif>All Types</option>
+                                @foreach ($product_types as $product_type)
+                                    <option value="{{ $product_type->product_type_id }}"
+                                        @if ($selected_product_type == $product_type->product_type_id) selected @endif>{{ $product_type->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -104,6 +114,7 @@
                                         <th>Average Price</th>
                                         <th>Quantities</th>
                                         <th>Brand</th>
+                                        <th>Type</th>
                                         <th>Category</th>
                                         <th>Action</th>
                                     </tr>
@@ -111,7 +122,7 @@
                                 <tbody id="product-table-body">
                                     @if ($products->isEmpty())
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted">No data available</td>
+                                            <td colspan="8" class="text-center text-muted">No data available</td>
                                         </tr>
                                     @else
                                         @foreach ($products as $product)
@@ -155,6 +166,7 @@
                                                 <td>{{ $product->detailed_products->sum('quantities') }}</td>
 
                                                 <td>{{ $product->brand->name }}</td>
+                                                <td>{{ $product->product_type?->name ?? 'Not set' }}</td>
                                                 <td>{{ $product->category->name }}</td>
                                                 <td>
 

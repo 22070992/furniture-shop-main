@@ -272,6 +272,10 @@ jQuery(document).ready(function () {
                 <h3><a
                         href="${productUrl}">${product.name}</a>
                 </h3>
+                <div class="product-card-meta">
+                    <span>${product.product_type?.name || 'Furniture'}</span>
+                    ${product.category?.name ? `<span>${product.category.name}</span>` : ''}
+                </div>
                 <div class="product-price">
                 ${
                     product.detailed_product.total_discount_percentage > 0
@@ -331,6 +335,10 @@ jQuery(document).ready(function () {
                 <div class="col-md-8 col-sm-7">
                     <div class="shop-list-content">
                         <h3><a href="${productUrl}">${product.name}</a></h3>
+                        <div class="product-card-meta mb-2">
+                            <span>${product.product_type?.name || 'Furniture'}</span>
+                            ${product.category?.name ? `<span>${product.category.name}</span>` : ''}
+                        </div>
                         <div class="product-price mb-2" data-feedback-id="shop.product-list-price.${product.product_id}">
                             ${
                                 product.detailed_product.total_discount_percentage > 0
@@ -388,6 +396,8 @@ jQuery(document).ready(function () {
 
         // category
         const category = $('.category-selected').data('category-id');
+        // product type
+        const productType = $('.product-type-selected').data('type-id') || 'all';
         // color
         const colors = $('.form-colorinput-input');
         const colorIds = [];
@@ -418,12 +428,12 @@ jQuery(document).ready(function () {
         history.pushState(
             null,
             null,
-            `/shop?page=${page}&category=${category}&color=${colorIds.join(',')}&tag=${tagIds.join(
+            `/shop?page=${page}&category=${category}&type=${productType}&color=${colorIds.join(',')}&tag=${tagIds.join(
                 ',',
             )}&search=${search_text}&price_from=${minPrice}&price_to=${maxPrice}&sorted_by=${sorted_by}`,
         );
         $.ajax({
-            url: `/products?page=${page}&category=${category}&color=${colorIds.join(',')}&tag=${tagIds.join(
+            url: `/products?page=${page}&category=${category}&type=${productType}&color=${colorIds.join(',')}&tag=${tagIds.join(
                 ',',
             )}&search=${search_text}&price_from=${minPrice}&price_to=${maxPrice}&sorted_by=${sorted_by}`,
             type: 'GET',
@@ -477,11 +487,68 @@ jQuery(document).ready(function () {
     $('#sort-product').change(function () {
         productFilter({ page: 1 });
     });
+
+    function closeFilterDropdowns() {
+        $('.js-filter-dropdown')
+            .removeClass('is-open')
+            .find('.category-selected, .product-type-selected')
+            .attr('aria-expanded', 'false');
+    }
+
+    function toggleFilterDropdown(dropdown) {
+        const wasOpen = dropdown.hasClass('is-open');
+        closeFilterDropdowns();
+        if (!wasOpen) {
+            dropdown.addClass('is-open');
+            dropdown.find('.category-selected, .product-type-selected').attr('aria-expanded', 'true');
+        }
+    }
+
+    $('.category-selected, .product-type-selected').on('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleFilterDropdown($(this).closest('.js-filter-dropdown'));
+    });
+
+    $('.category-selected, .product-type-selected').on('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleFilterDropdown($(this).closest('.js-filter-dropdown'));
+        }
+        if (event.key === 'Escape') {
+            closeFilterDropdowns();
+        }
+    });
+
+    $(document).on('click', function (event) {
+        if (!$(event.target).closest('.js-filter-dropdown').length) {
+            closeFilterDropdowns();
+        }
+    });
+
+    $(document).on('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeFilterDropdowns();
+        }
+    });
+
     // category filter
-    $('.categories-options .option').click(function () {
+    $('.categories-options .option').click(function (event) {
+        event.stopPropagation();
         const category_id = $(this).data('category-id');
         $('.category-selected').text($(this).text());
         $('.category-selected').data('category-id', category_id);
+        closeFilterDropdowns();
+        productFilter({ page: 1 });
+    });
+
+    // product type filter
+    $('.product-types-options .option').click(function (event) {
+        event.stopPropagation();
+        const typeId = $(this).data('type-id');
+        $('.product-type-selected').text($(this).text());
+        $('.product-type-selected').data('type-id', typeId);
+        closeFilterDropdowns();
         productFilter({ page: 1 });
     });
 

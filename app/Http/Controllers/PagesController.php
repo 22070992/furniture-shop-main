@@ -9,6 +9,7 @@ use App\Models\Color;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductDetail;
+use App\Models\ProductType;
 use App\Models\Review;
 use App\Models\Tag;
 use App\Services\ProductRecommendationService;
@@ -270,6 +271,7 @@ class PagesController extends Controller
     public function shop(SeoService $seo)
     {
         $category = request()->query('category');
+        $productType = request()->query('type');
         $color = request()->query('color');
         $tag = request()->query('tag');
         $search = request()->query('search');
@@ -284,7 +286,9 @@ class PagesController extends Controller
         $query = Product::with(
             [
                 'category',
+                'product_type',
                 'brand',
+                'product_tags.tag',
                 'detailed_products' => function ($query) {
                     $query->where('is_deleted', 0)->with('images', 'color', 'product_discounts.discount');
                 },
@@ -304,6 +308,9 @@ class PagesController extends Controller
         if ($category !== 'all' && $category !== null) {
             $query->where('category_id', $category);
         }
+        if ($productType !== 'all' && $productType !== null) {
+            $query->where('product_type_id', $productType);
+        }
         // If color is not 'all', filter by color_id
         if ($color !== 'all' && $color !== null) {
             $colorIds = explode(',', $color);
@@ -322,7 +329,20 @@ class PagesController extends Controller
 
         // If search is not null, filter by name
         if ($search !== null) {
-            $query->where('name', 'LIKE', '%' . $search . '%');
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('short_description', 'LIKE', '%' . $search . '%')
+                    ->orWhere('material', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('category', function ($categoryQuery) use ($search) {
+                        $categoryQuery->where('name', 'LIKE', '%' . $search . '%');
+                    })
+                    ->orWhereHas('product_type', function ($typeQuery) use ($search) {
+                        $typeQuery->where('name', 'LIKE', '%' . $search . '%');
+                    })
+                    ->orWhereHas('product_tags.tag', function ($tagQuery) use ($search) {
+                        $tagQuery->where('name', 'LIKE', '%' . $search . '%');
+                    });
+            });
         }
         // sorted 
         if ($sorted_by === 'latest') {
@@ -388,8 +408,14 @@ class PagesController extends Controller
         }
 
         $categories = Category::orderBy('index', 'asc')->get();
+        $productTypes = ProductType::withCount([
+            'products' => fn ($query) => $query->where('is_deleted', false),
+        ])->orderBy('index')->orderBy('name')->get();
         $selectedCategory = ($category !== 'all' && $category !== null)
             ? $categories->firstWhere('category_id', (int) $category)
+            : null;
+        $selectedProductType = ($productType !== 'all' && $productType !== null)
+            ? $productTypes->firstWhere('product_type_id', (int) $productType)
             : null;
         $shopSeo = $selectedCategory
             ? $seo->categoryMeta($selectedCategory)
@@ -401,8 +427,11 @@ class PagesController extends Controller
         $data = [
             'page' => 'Shop',
             'categories' => $categories,
+            'product_types' => $productTypes,
             'colors' => Color::all(),
             'selected_category' => $category ?? 'all',
+            'selected_product_type' => $productType ?? 'all',
+            'selected_product_type_model' => $selectedProductType,
             'selected_colors' => $colorIds ?? [],
             'selected_tags' => $tagIds ?? [],
             'tags' => Tag::all(),

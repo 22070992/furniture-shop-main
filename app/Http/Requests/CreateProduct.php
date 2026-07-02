@@ -18,6 +18,7 @@ class CreateProduct extends FormRequest
         return [
             'title' => 'required',
             'category' => 'required|exists:categories,category_id',
+            'product_type' => 'nullable|exists:product_types,product_type_id',
             'brand' => 'required|exists:brands,brand_id',
             'description' => 'required',
             'short_description' => 'nullable|string|max:255',
@@ -31,6 +32,7 @@ class CreateProduct extends FormRequest
             'title.required' => 'The title field is required.',
             'category.required' => 'The category field is required.',
             'category.exists' => 'The category doesnt exist.',
+            'product_type.exists' => 'The product type doesnt exist.',
             'brand.required' => 'The brand field is required.',
             'brand.exists' => 'The brand doesnt exist.',
             'description.required' => 'The description field is required.',

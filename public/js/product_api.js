@@ -78,6 +78,7 @@ jQuery.noConflict();
             return {
                 title: $('#title').val(),
                 category_id: $('#category').val(),
+                product_type_id: $('#product_type').val(),
                 brand_id: $('#brand').val(),
                 material: $('#material').val(),
                 tags: $('#select-tags').val() || [],
@@ -503,6 +504,7 @@ jQuery.noConflict();
             <td  class="text-danger">${formatter.format(product.average_price)}đ</td>
             <td>${product.sum_quantities}</td>
             <td>${product.brand.name}</td>
+            <td>${product.product_type?.name || 'Not set'}</td>
             <td>${product.category.name}</td>
             <td>${view_btn} ${update_btn} ${delete_btn}</td>
         </tr>`;
@@ -512,14 +514,15 @@ jQuery.noConflict();
             const search = $('#search-product-input').val();
             const brand = $('#brands_select').val();
             const category = $('#categories_select').val();
+            const productType = $('#product_types_select').val();
             history.pushState(
                 null,
                 null,
-                `/admin/products?page=${page}&category=${category}&brand=${brand}&search=${search}`,
+                `/admin/products?page=${page}&category=${category}&type=${productType}&brand=${brand}&search=${search}`,
             );
             // call ajax
             $.ajax({
-                url: `/admin/products/pagination?page=${page}&category=${category}&brand=${brand}&search=${search}`,
+                url: `/admin/products/pagination?page=${page}&category=${category}&type=${productType}&brand=${brand}&search=${search}`,
                 type: 'GET',
                 success: function (response) {
                     // pagination item
@@ -530,7 +533,7 @@ jQuery.noConflict();
                     // render product item
                     if (response.products.data.length === 0) {
                         $('#product-table-body').html(` <tr>
-                        <td colspan="7" class="text-center text-muted">No data available</td>
+                        <td colspan="8" class="text-center text-muted">No data available</td>
                     </tr>`);
                         return;
                     }
@@ -576,6 +579,9 @@ jQuery.noConflict();
             }, 500),
         );
         $('#categories_select').on('change', function () {
+            productPagination({ page: 1 });
+        });
+        $('#product_types_select').on('change', function () {
             productPagination({ page: 1 });
         });
         $('#brands_select').on('change', function () {

@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\ProductDetail;
 use App\Models\ProductImage;
 use App\Models\ProductTag;
+use App\Models\ProductType;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -27,9 +28,13 @@ class ProductController extends Controller
         $search = request()->query('search');
         $brand = request()->query('brand');
         $category = request()->query('category');
-        $query = Product::with('category', 'brand', 'detailed_products.images');
+        $productType = request()->query('type');
+        $query = Product::with('category', 'product_type', 'brand', 'detailed_products.images');
         if ($category !== null && $category !== 'all') {
             $query = $query->where('category_id', $category);
+        }
+        if ($productType !== null && $productType !== 'all') {
+            $query = $query->where('product_type_id', $productType);
         }
         if ($brand !== null && $brand !== 'all') {
             $query = $query->where('brand_id', $brand);
@@ -42,6 +47,9 @@ class ProductController extends Controller
                     ->orWhereHas('category', function ($query) use ($search) {
                         $query->where('name', 'LIKE', '%' . $search . '%');
                     })
+                    ->orWhereHas('product_type', function ($query) use ($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%');
+                    })
                     ->orWhereHas('brand', function ($query) use ($search) {
                         $query->where('name', 'LIKE', '%' . $search . '%');
                     });
@@ -49,13 +57,16 @@ class ProductController extends Controller
         $products = $query->paginate(4); // 4 elements per page
         $brands = Brand::orderBy('index', 'asc')->get();
         $categories = Category::orderBy('index', 'asc')->get();
+        $productTypes = ProductType::orderBy('index')->orderBy('name')->get();
         $data = [
             'page' => 'Products',
             'search' => $search,
             'products' => $products,
-            'selected_category' => $category,
-            'selected_brand' => $brand,
+            'selected_category' => $category ?? 'all',
+            'selected_product_type' => $productType ?? 'all',
+            'selected_brand' => $brand ?? 'all',
             'categories' => $categories,
+            'product_types' => $productTypes,
             'brands' => $brands,
         ];
         return view('admin.products.index', $data);
@@ -66,9 +77,13 @@ class ProductController extends Controller
         $search = request()->query('search');
         $brand = request()->query('brand');
         $category = request()->query('category');
-        $query = Product::with('category', 'brand', 'detailed_products.images');
+        $productType = request()->query('type');
+        $query = Product::with('category', 'product_type', 'brand', 'detailed_products.images');
         if ($category !== null && $category !== 'all') {
             $query = $query->where('category_id', $category);
+        }
+        if ($productType !== null && $productType !== 'all') {
+            $query = $query->where('product_type_id', $productType);
         }
         if ($brand !== null && $brand !== 'all') {
             $query = $query->where('brand_id', $brand);
@@ -79,6 +94,9 @@ class ProductController extends Controller
                 $query->where('name', 'LIKE', '%' . $search . '%')
                     ->orWhere('product_id', 'LIKE', '%' . $search . '%')
                     ->orWhereHas('category', function ($query) use ($search) {
+                        $query->where('name', 'LIKE', '%' . $search . '%');
+                    })
+                    ->orWhereHas('product_type', function ($query) use ($search) {
                         $query->where('name', 'LIKE', '%' . $search . '%');
                     })
                     ->orWhereHas('brand', function ($query) use ($search) {
@@ -122,6 +140,7 @@ class ProductController extends Controller
         $data = [
             'page' => 'Create Product',
             'categories' => Category::all(),
+            'product_types' => ProductType::orderBy('index')->orderBy('name')->get(),
             'brands' => Brand::all(),
             'tags' => Tag::all(),
         ];
@@ -133,6 +152,7 @@ class ProductController extends Controller
         $product = Product::create([
             'name' => $request->input('title'),
             'category_id' => $request->input('category'),
+            'product_type_id' => $request->input('product_type') ?: null,
             'brand_id' => $request->input('brand'),
             'description' => $request->input('description'),
             'short_description' => $request->input('short_description'),
@@ -157,6 +177,7 @@ class ProductController extends Controller
             'page' => 'Product Details',
             'product' => Product::with('category', 'brand', 'product_tags')->find($product_id),
             'categories' => Category::all(),
+            'product_types' => ProductType::orderBy('index')->orderBy('name')->get(),
             'brands' => Brand::all(),
             'tags' => Tag::all(),
         ];
@@ -171,6 +192,7 @@ class ProductController extends Controller
             $product->update([
                 'name' => $request->input('title'),
                 'category_id' => $request->input('category'),
+                'product_type_id' => $request->input('product_type') ?: null,
                 'brand_id' => $request->input('brand'),
                 'description' => $request->input('description'),
                 'short_description' => $request->input('short_description'),
@@ -325,6 +347,7 @@ class ProductController extends Controller
     public function get_products()
     {
         $category = request()->query('category');
+        $productType = request()->query('type');
         $color = request()->query('color');
         $tag = request()->query('tag');
         $search = request()->query('search');
@@ -335,7 +358,9 @@ class ProductController extends Controller
         $query = Product::with(
             [
                 'category',
+                'product_type',
                 'brand',
+                'product_tags.tag',
                 'detailed_products' => function ($query) {
                     $query->where('is_deleted', 0)->with('images', 'color', 'product_discounts.discount');
                 },
@@ -352,6 +377,9 @@ class ProductController extends Controller
         // If category is not 'all', filter by category_id
         if ($category !== 'all' && $category !== null) {
             $query->where('category_id', $category);
+        }
+        if ($productType !== 'all' && $productType !== null) {
+            $query->where('product_type_id', $productType);
         }
         // If color is not 'all', filter by color_id
         if ($color !== 'all' && $color !== null) {
@@ -372,7 +400,20 @@ class ProductController extends Controller
 
         // If search is not null, filter by name
         if ($search !== null) {
-            $query->where('name', 'LIKE', '%' . $search . '%');
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('short_description', 'LIKE', '%' . $search . '%')
+                    ->orWhere('material', 'LIKE', '%' . $search . '%')
+                    ->orWhereHas('category', function ($categoryQuery) use ($search) {
+                        $categoryQuery->where('name', 'LIKE', '%' . $search . '%');
+                    })
+                    ->orWhereHas('product_type', function ($typeQuery) use ($search) {
+                        $typeQuery->where('name', 'LIKE', '%' . $search . '%');
+                    })
+                    ->orWhereHas('product_tags.tag', function ($tagQuery) use ($search) {
+                        $tagQuery->where('name', 'LIKE', '%' . $search . '%');
+                    });
+            });
         }
         // sorted 
         if ($sorted_by === 'latest') {

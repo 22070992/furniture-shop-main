@@ -42,10 +42,21 @@
                                 </div>
                                 <div class="col-sm-6 col-md-3">
                                     <div class="mb-3">
-                                        <label for="category" class="form-label">Category</label>
+                                        <label for="category" class="form-label">Room / Collection</label>
                                         <select id="category" name="category" class="form-control form-select">
                                             @foreach ($categories as $category)
                                                 <option value="{{ $category->category_id }}">{{ $category->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <div class="mb-3">
+                                        <label for="product_type" class="form-label">Product Type</label>
+                                        <select id="product_type" name="product_type" class="form-control form-select">
+                                            <option value="">Auto / Not selected</option>
+                                            @foreach ($product_types as $product_type)
+                                                <option value="{{ $product_type->product_type_id }}">{{ $product_type->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>

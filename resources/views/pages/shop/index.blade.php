@@ -109,6 +109,12 @@
                                                 <div class="product-content">
                                                     <h3><a>{{ $product->name }}</a>
                                                     </h3>
+                                                    <div class="product-card-meta">
+                                                        <span>{{ $product->product_type?->name ?? 'Furniture' }}</span>
+                                                        @if ($product->category?->name)
+                                                            <span>{{ $product->category->name }}</span>
+                                                        @endif
+                                                    </div>
                                                     <div class="product-price" data-feedback-id="shop.product-price.{{ $product->product_id }}">
                                                         @if ($detailed_product->total_discount_percentage > 0)
                                                             <span class="old-price">
@@ -163,6 +169,12 @@
                                                 <div class="col-md-8 col-sm-7">
                                                     <div class="shop-list-content">
                                                         <h3><a href="/products/{{ $product->product_id }}">{{ $product->name }}</a></h3>
+                                                        <div class="product-card-meta mb-2">
+                                                            <span>{{ $product->product_type?->name ?? 'Furniture' }}</span>
+                                                            @if ($product->category?->name)
+                                                                <span>{{ $product->category->name }}</span>
+                                                            @endif
+                                                        </div>
                                                         <div class="product-price mb-2"
                                                             data-feedback-id="shop.product-list-price.{{ $product->product_id }}">
                                                             @if ($detailed_product->total_discount_percentage > 0)
@@ -238,22 +250,54 @@
 
                         <div class="sidebar-widget sidebar-widget-border mb-40 pb-35">
                             <div class="sidebar-widget-title mb-25">
-                                <h3>Product Categories</h3>
+                                <h3>Product Type</h3>
                             </div>
                             <div class="sidebar-list-style">
-                                <div class="categories-select">
+                                <div class="product-types-select js-filter-dropdown">
+                                    @if ($selected_product_type == 'all' || $selected_product_type == null)
+                                        <div class="product-type-selected" data-type-id="all" role="button" tabindex="0"
+                                            aria-expanded="false">All types</div>
+                                    @else
+                                        <div class="product-type-selected" data-type-id="{{ $selected_product_type }}"
+                                            role="button" tabindex="0" aria-expanded="false">
+                                            {{ $selected_product_type_model?->name ?? 'Selected type' }}</div>
+                                    @endif
+
+                                    <div class="product-types-options" role="listbox">
+                                        <div class="option" data-type-id="all">All types</div>
+                                        @foreach ($product_types as $product_type)
+                                            <div class="option" data-type-id="{{ $product_type->product_type_id }}">
+                                                {{ $product_type->name }}
+                                                @if ($product_type->products_count)
+                                                    <small>({{ $product_type->products_count }})</small>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-widget sidebar-widget-border mb-40 pb-35">
+                            <div class="sidebar-widget-title mb-25">
+                                <h3>Room / Collection</h3>
+                            </div>
+                            <div class="sidebar-list-style">
+                                <div class="categories-select js-filter-dropdown">
                                     @if ($selected_category == 'all' || $selected_category == null)
-                                        <div class="category-selected" data-category-id="all">All</div>
+                                        <div class="category-selected" data-category-id="all" role="button" tabindex="0"
+                                            aria-expanded="false">All</div>
                                     @else
                                         @foreach ($categories as $category)
                                             @if ($selected_category == $category->category_id)
-                                                <div class="category-selected" data-category-id="{{ $selected_category }}">
+                                                <div class="category-selected" data-category-id="{{ $selected_category }}"
+                                                    role="button" tabindex="0" aria-expanded="false">
                                                     {{ $category->name }}</div>
                                             @endif
                                         @endforeach
                                     @endif
 
-                                    <div class="categories-options">
+                                    <div class="categories-options" role="listbox">
                                         <div class="option" data-category-id="all">All</div>
 
                                         @foreach ($categories as $category)

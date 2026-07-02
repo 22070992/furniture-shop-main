@@ -4,24 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductType;
+use App\Models\Tag;
+use App\Services\OpenAiChatService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AiChatController extends Controller
 {
-    public function reply(Request $request)
+    public function reply(Request $request, OpenAiChatService $openAi)
     {
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:1000'],
+            'history' => ['nullable', 'array', 'max:12'],
+            'history.*.role' => ['required_with:history', 'in:user,assistant'],
+            'history.*.content' => ['required_with:history', 'string', 'max:1000'],
         ]);
 
         $message = trim($validated['message']);
         $normalized = $this->normalizeText($message);
         $filters = $this->detectFilters($normalized);
         $products = $this->findProducts($filters, $message);
+        $history = $validated['history'] ?? [];
+
+        try {
+            $reply = $openAi->reply($message, $history, $products, $this->facets());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            $reply = $openAi->isConfigured()
+                ? 'Mình đang gặp lỗi kết nối ChatGPT API nên chưa thể suy nghĩ câu trả lời mới lúc này. Bạn thử lại sau vài giây nhé.'
+                : 'Chatbox đã sẵn sàng dùng ChatGPT API, nhưng dự án chưa có OPENAI_API_KEY. Hãy điền key trong file .env rồi chạy php artisan optimize:clear.';
+        }
 
         return response()->json([
-            'reply' => $this->buildReply($message, $filters, $products),
+            'reply' => $reply,
             'products' => $products,
             'quick_replies' => $this->quickReplies($filters),
         ]);
@@ -31,6 +49,8 @@ class AiChatController extends Controller
     {
         $query = Product::with([
             'category',
+            'product_type',
+            'product_tags.tag',
             'detailed_products' => function ($query) {
                 $query->where('is_deleted', 0)
                     ->with(['images', 'color'])
@@ -56,7 +76,21 @@ class AiChatController extends Controller
             $query->whereHas('category', function ($categoryQuery) use ($filters) {
                 $categoryQuery->where('name', $filters['category']);
             });
-        } else {
+        }
+
+        if ($filters['type']) {
+            $query->whereHas('product_type', function ($typeQuery) use ($filters) {
+                $typeQuery->where('name', $filters['type']);
+            });
+        }
+
+        if ($filters['tag']) {
+            $query->whereHas('product_tags.tag', function ($tagQuery) use ($filters) {
+                $tagQuery->where('name', $filters['tag']);
+            });
+        }
+
+        if (!$filters['category'] && !$filters['type'] && !$filters['tag'] && !$filters['material'] && !$filters['color'] && !$filters['max_price']) {
             $query->where(function ($searchQuery) use ($message) {
                 $searchQuery->where('name', 'LIKE', '%' . $message . '%')
                     ->orWhere('short_description', 'LIKE', '%' . $message . '%')
@@ -64,6 +98,12 @@ class AiChatController extends Controller
                     ->orWhere('material', 'LIKE', '%' . $message . '%')
                     ->orWhereHas('category', function ($categoryQuery) use ($message) {
                         $categoryQuery->where('name', 'LIKE', '%' . $message . '%');
+                    })
+                    ->orWhereHas('product_type', function ($typeQuery) use ($message) {
+                        $typeQuery->where('name', 'LIKE', '%' . $message . '%');
+                    })
+                    ->orWhereHas('product_tags.tag', function ($tagQuery) use ($message) {
+                        $tagQuery->where('name', 'LIKE', '%' . $message . '%');
                     });
             });
         }
@@ -74,9 +114,11 @@ class AiChatController extends Controller
 
         $products = $query->orderByDesc('amount_sold')->limit(4)->get();
 
-        if ($products->isEmpty() && !$filters['category'] && !$filters['material'] && !$filters['color'] && !$filters['max_price']) {
+        if ($products->isEmpty() && !$filters['category'] && !$filters['type'] && !$filters['tag'] && !$filters['material'] && !$filters['color'] && !$filters['max_price']) {
             $products = Product::with([
                 'category',
+                'product_type',
+                'product_tags.tag',
                 'detailed_products' => function ($query) {
                     $query->where('is_deleted', 0)->with(['images', 'color'])->orderBy('original_price');
                 },
@@ -94,13 +136,15 @@ class AiChatController extends Controller
             return [
                 'id' => $product->product_id,
                 'name' => $product->name,
+                'type' => $product->product_type?->name,
                 'category' => $product->category?->name,
+                'tags' => $product->product_tags->map(fn ($productTag) => $productTag->tag?->name)->filter()->values(),
                 'material' => $product->material,
                 'description' => $product->short_description ?: Str::limit(strip_tags($product->description), 90),
                 'price' => (int) ($detail?->original_price ?? 0),
                 'color' => $detail?->color?->name,
                 'image' => $detail?->images?->first()?->url,
-                'url' => url('/products/' . $product->product_id),
+                'url' => $product->publicUrl(),
             ];
         })->values();
     }
@@ -130,41 +174,12 @@ class AiChatController extends Controller
         return $details->first();
     }
 
-    private function buildReply(string $message, array $filters, $products): string
-    {
-        if ($this->isGreeting($this->normalizeText($message))) {
-            return 'Chào bạn, mình là trợ lý Furemir. Bạn có thể hỏi mình về ghế văn phòng, ghế treo, ghế gấp, màu sắc, chất liệu hoặc mức giá mong muốn.';
-        }
-
-        if ($products->isEmpty()) {
-            $categories = Category::orderBy('index')->limit(6)->pluck('name')->implode(', ');
-
-            return 'Mình chưa tìm thấy sản phẩm khớp hoàn toàn. Bạn có thể thử hỏi theo danh mục như: ' . $categories . ', hoặc thêm ngân sách/màu sắc để mình lọc sát hơn.';
-        }
-
-        $parts = [];
-        if ($filters['category']) {
-            $parts[] = $filters['category'];
-        }
-        if ($filters['color']) {
-            $parts[] = 'màu ' . $filters['color'];
-        }
-        if ($filters['material']) {
-            $parts[] = 'chất liệu ' . $filters['material'];
-        }
-        if ($filters['max_price']) {
-            $parts[] = 'dưới ' . number_format($filters['max_price'], 0, '.', ',') . 'đ';
-        }
-
-        $context = $parts ? ' phù hợp với ' . implode(', ', $parts) : ' nổi bật trong cửa hàng';
-
-        return 'Mình gợi ý cho bạn vài sản phẩm' . $context . '. Bấm vào từng sản phẩm để xem ảnh, màu và chi tiết trước khi thêm vào giỏ hàng.';
-    }
-
     private function detectFilters(string $normalized): array
     {
         return [
             'category' => $this->detectCategory($normalized),
+            'type' => $this->detectProductType($normalized),
+            'tag' => $this->detectTag($normalized),
             'color' => $this->detectColor($normalized),
             'material' => $this->detectMaterial($normalized),
             'max_price' => $this->detectMaxPrice($normalized),
@@ -173,23 +188,51 @@ class AiChatController extends Controller
 
     private function detectCategory(string $normalized): ?string
     {
-        $categoryMap = [
-            'Office Chair' => ['office chair', 'ghe van phong', 'van phong', 'lam viec'],
-            'Hanging Chair' => ['hanging chair', 'ghe treo', 'xich du', 'thu gian'],
-            'Folding Chair' => ['folding chair', 'ghe gap', 'gap gon', 'xep gon'],
+        foreach (Category::all() as $category) {
+            if (Str::contains($normalized, $this->normalizeText($category->name))) {
+                return $category->name;
+            }
+        }
+
+        return null;
+    }
+
+    private function detectProductType(string $normalized): ?string
+    {
+        $aliases = [
+            'Chair' => ['chair', 'ghe', 'ghe van phong', 'ghe treo', 'ghe gap', 'armchair', 'stool'],
+            'Table' => ['table', 'ban', 'ban an', 'ban tra', 'coffee table', 'dining table'],
+            'Bed' => ['bed', 'giuong', 'nem', 'mattress', 'headboard'],
+            'Sofa' => ['sofa', 'ghe sofa'],
+            'Wardrobe' => ['wardrobe', 'tu quan ao'],
+            'Cabinet & Storage' => ['cabinet', 'tu', 'ke', 'storage', 'dresser', 'chest'],
+            'Desk' => ['desk', 'ban lam viec', 'vanity'],
+            'Bench' => ['bench', 'ghe dai'],
+            'Outdoor Furniture' => ['outdoor', 'ngoai troi', 'san vuon', 'ban cong'],
         ];
 
-        foreach ($categoryMap as $category => $keywords) {
+        foreach ($aliases as $type => $keywords) {
             foreach ($keywords as $keyword) {
                 if (Str::contains($normalized, $keyword)) {
-                    return $category;
+                    return $type;
                 }
             }
         }
 
-        foreach (Category::all() as $category) {
-            if (Str::contains($normalized, $this->normalizeText($category->name))) {
-                return $category->name;
+        foreach (ProductType::all() as $type) {
+            if (Str::contains($normalized, $this->normalizeText($type->name))) {
+                return $type->name;
+            }
+        }
+
+        return null;
+    }
+
+    private function detectTag(string $normalized): ?string
+    {
+        foreach (Tag::all() as $tag) {
+            if (Str::contains($normalized, $this->normalizeText($tag->name))) {
+                return $tag->name;
             }
         }
 
@@ -258,18 +301,29 @@ class AiChatController extends Controller
         };
     }
 
-    private function isGreeting(string $normalized): bool
+    private function facets(): array
     {
-        return in_array($normalized, ['hi', 'hello', 'chao', 'xin chao', 'alo'], true);
+        return [
+            'rooms' => Category::orderBy('index')->limit(12)->pluck('name')->values(),
+            'product_types' => ProductType::orderBy('index')->limit(12)->pluck('name')->values(),
+            'theme_tags' => Tag::orderBy('name')->limit(20)->pluck('name')->values(),
+        ];
     }
 
     private function quickReplies(array $filters): array
     {
-        if ($filters['category']) {
-            return ['Có màu đen không?', 'Tư vấn dưới 5 triệu', 'Xem chất liệu gỗ'];
+        if ($filters['type']) {
+            return [
+                'Loại này có màu sáng không?',
+                'Gợi ý dưới 5 triệu',
+                'Phù hợp phòng nhỏ không?',
+            ];
         }
 
-        return ['Ghế văn phòng màu đen', 'Ghế treo mây', 'Ghế gấp dưới 3 triệu'];
+        return ProductType::orderBy('index')->limit(3)->pluck('name')
+            ->map(fn ($type) => 'Tư vấn ' . Str::lower($type))
+            ->values()
+            ->all() ?: ['Tư vấn bàn cho phòng khách', 'Tư vấn ghế làm việc', 'Tư vấn giường phòng ngủ'];
     }
 
     private function normalizeText(string $text): string
