@@ -350,6 +350,8 @@ class VnpayPaymentTest extends TestCase
         ] as $field) {
             $this->assertArrayHasKey($field, $params);
         }
+
+        $this->assertArrayNotHasKey('vnp_IpnUrl', $params);
     }
 
     public function test_signature_generation_is_stable(): void
@@ -358,6 +360,26 @@ class VnpayPaymentTest extends TestCase
         $params = ['vnp_TxnRef' => 'ABC', 'vnp_Amount' => '100000', 'vnp_ResponseCode' => '00'];
 
         $this->assertSame($service->makeSecureHash($params), $service->makeSecureHash(array_reverse($params, true)));
+    }
+
+    public function test_signature_matches_vnpay_urlencode_style_for_spaced_values(): void
+    {
+        $service = app(VnpayService::class);
+        $params = [
+            'vnp_Amount' => '10000000',
+            'vnp_OrderInfo' => 'Thanh toan don hang #999',
+            'vnp_ResponseCode' => '00',
+            'vnp_TmnCode' => 'TESTTMN',
+            'vnp_TransactionStatus' => '00',
+            'vnp_TxnRef' => 'VNP-DIAG-999',
+        ];
+
+        $vnpayStyleHashData = http_build_query($service->signableParams($params), '', '&', PHP_QUERY_RFC1738);
+        $vnpayStyleHash = hash_hmac('sha512', $vnpayStyleHashData, (string) config('services.vnpay.hash_secret'));
+
+        $this->assertStringContainsString('+', $vnpayStyleHashData);
+        $this->assertSame($vnpayStyleHash, $service->makeSecureHash($params));
+        $this->assertTrue($service->verifyCallback($params + ['vnp_SecureHash' => $vnpayStyleHash]));
     }
 
     public function test_callback_with_invalid_signature_is_rejected(): void
