@@ -36,11 +36,6 @@ class VnpayService
             'vnp_ExpireDate' => $now->addMinutes($this->paymentTimeout())->format('YmdHis'),
         ];
 
-        $ipnUrl = config('services.vnpay.ipn_url');
-        if (filled($ipnUrl)) {
-            $params['vnp_IpnUrl'] = $ipnUrl;
-        }
-
         $params['vnp_SecureHash'] = $this->makeSecureHash($params);
 
         return rtrim((string) config('services.vnpay.payment_url'), '?') . '?' . $this->queryString($params);
@@ -80,7 +75,7 @@ class VnpayService
 
     public function queryString(array $params): string
     {
-        return http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+        return http_build_query($params, '', '&', PHP_QUERY_RFC1738);
     }
 
     public function toVnpayAmount(int $amount): int
