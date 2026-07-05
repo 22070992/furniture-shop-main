@@ -73,12 +73,10 @@
                                                     value="" placeholder="">
                                             </div>
                                         </div>
-
-                                        <p id="checkout-error" class="text-danger d-none"></p>
-
                                     </div>
                                 @endif
                             @endif
+                            <p id="checkout-error" class="text-danger d-none" role="alert" aria-live="polite"></p>
                             <div class="additional-info-wrap">
                                 <label>Order notes</label>
                                 <textarea id="note" name="note" placeholder="Notes about your order, e.g. special notes for delivery. "></textarea>
