@@ -112,7 +112,7 @@ Route::middleware([PublicMiddleware::class])->group(function () {
     Route::delete('/compare', [CompareController::class, 'clear'])->name('compare.clear');
     Route::post('/wishlist', [WishlistController::class, 'store'])->name('wishlist.store');
     Route::delete('/wishlist/{product_id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
-    Route::get('/checkout', [PagesController::class, 'checkout'])->name('checkout');;
+    Route::get('/checkout', [PagesController::class, 'checkout'])->name('checkout.index');
 
     Route::get('/products', [ProductController::class, 'get_products']);
     Route::post('/recommendations/combo-cart-items', [ProductRecommendationController::class, 'comboCartItems'])
@@ -218,8 +218,7 @@ Route::middleware([AdminMiddleware::class])->group(function () {
     // brands routes
     Route::middleware(['can:read brands'])->group(function () {
         Route::get('/admin/brands', [BrandController::class, 'brand_ui'])->name('brands.index');
-        Route::get('/admin/brands', [BrandController::class, 'brand_search_ui'])->name('brands.search');
-        Route::get('/admin/brands/pagination', [BrandController::class, 'brands_pagination'])->name('brands.search');
+        Route::get('/admin/brands/pagination', [BrandController::class, 'brands_pagination'])->name('brands.pagination');
     });
     Route::middleware(['can:create brand'])->group(function () {
         Route::post('/admin/brands/create', [BrandController::class, 'brand_create'])->name('brands.create');

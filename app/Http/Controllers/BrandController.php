@@ -14,10 +14,15 @@ class BrandController extends Controller
     public function brand_ui(Request $request)
     {
         $search = request()->query('search');
+        $query = Brand::query();
+
+        if ($search) {
+            $query->where('name', 'LIKE', '%' . $search . '%');
+        }
+
         $data = [
             'page' => 'Brands',
-            'brands' =>  Brand::query()
-                ->paginate(5),
+            'brands' =>  $query->paginate(5)->appends(['search' => $search]),
             'search' => $search,
         ];
         return view('admin.brands.brand', $data);
