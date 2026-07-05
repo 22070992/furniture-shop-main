@@ -47,12 +47,12 @@ class VnpayController extends Controller
         if ($validSignature && $payment) {
             if ($payment->status === Payment::STATUS_PAID || $payment->order?->payment_status === Order::PAYMENT_STATUS_PAID) {
                 $status = 'success';
-            } elseif (($payload['vnp_ResponseCode'] ?? null) === '24') {
+            } elseif ($payment->status === Payment::STATUS_CANCELLED || $payment->order?->payment_status === Order::PAYMENT_STATUS_CANCELLED) {
                 $status = 'cancelled';
-            } elseif (($payload['vnp_ResponseCode'] ?? null) === '00') {
-                $status = 'pending';
-            } else {
+            } elseif ($payment->status === Payment::STATUS_FAILED || $payment->order?->payment_status === Order::PAYMENT_STATUS_FAILED) {
                 $status = 'failed';
+            } else {
+                $status = 'pending';
             }
         } elseif (!empty($payload) && !$payment) {
             $status = 'not_found';

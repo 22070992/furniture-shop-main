@@ -375,6 +375,25 @@ class VnpayPaymentTest extends TestCase
         $this->assertArrayNotHasKey('vnp_IpnUrl', $params);
     }
 
+    public function test_payment_url_uses_current_public_host_when_configured_return_url_is_local(): void
+    {
+        config(['services.vnpay.return_url' => 'http://127.0.0.1:8000/payment/vnpay/return']);
+
+        $response = $this->actingAs($this->user())
+            ->withServerVariables([
+                'HTTP_HOST' => 'furniture-shop-main-production-sypnj8.laravel.cloud',
+                'HTTPS' => 'on',
+            ])
+            ->post('https://furniture-shop-main-production-sypnj8.laravel.cloud/checkout', $this->checkoutPayload('vnpay'));
+
+        parse_str(parse_url($response->getContent(), PHP_URL_QUERY), $params);
+
+        $this->assertSame(
+            'https://furniture-shop-main-production-sypnj8.laravel.cloud/payment/vnpay/return',
+            $params['vnp_ReturnUrl']
+        );
+    }
+
     public function test_signature_generation_is_stable(): void
     {
         $service = app(VnpayService::class);
@@ -456,6 +475,22 @@ class VnpayPaymentTest extends TestCase
 
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => Payment::STATUS_FAILED]);
         $this->assertDatabaseHas('orders', ['order_id' => $payment->order_id, 'payment_status' => Order::PAYMENT_STATUS_FAILED]);
+    }
+
+    public function test_return_url_shows_failed_when_verified_callback_is_not_successful(): void
+    {
+        $payment = $this->createPendingPayment();
+        $payload = $this->signedPayload($payment, ['vnp_TransactionStatus' => '02']);
+
+        $response = $this->actingAs($payment->order->customer)->get('/payment/vnpay/return?' . http_build_query($payload));
+
+        $response->assertOk();
+        $response->assertSee('Thanh toán không thành công');
+        $response->assertDontSee('Đang xác nhận thanh toán');
+        $this->assertDatabaseHas('orders', [
+            'order_id' => $payment->order_id,
+            'payment_status' => Order::PAYMENT_STATUS_FAILED,
+        ]);
     }
 
     public function test_successful_ipn_updates_payment_and_order(): void

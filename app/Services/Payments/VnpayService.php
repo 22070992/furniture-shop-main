@@ -18,7 +18,11 @@ class VnpayService
         $order = $payment->order;
         $now = CarbonImmutable::now($this->timezone());
         $amount = $this->toVnpayAmount((int) round((float) $payment->amount));
-        $returnUrl = config('services.vnpay.return_url') ?: route('vnpay.return');
+        $returnUrl = $this->callbackUrl(
+            $request,
+            'vnpay.return',
+            config('services.vnpay.return_url')
+        );
 
         $params = [
             'vnp_Version' => (string) config('services.vnpay.version', '2.1.0'),
@@ -128,6 +132,53 @@ class VnpayService
     private function paymentTimeout(): int
     {
         return max(1, (int) config('services.vnpay.payment_timeout', 15));
+    }
+
+    private function callbackUrl(Request $request, string $routeName, ?string $configuredUrl): string
+    {
+        $configuredUrl = trim((string) $configuredUrl);
+
+        if ($configuredUrl !== '' && $this->callbackUrlMatchesEnvironment($configuredUrl, $request)) {
+            return $configuredUrl;
+        }
+
+        return rtrim($this->requestRoot($request), '/') . route($routeName, [], false);
+    }
+
+    private function callbackUrlMatchesEnvironment(string $url, Request $request): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (!is_string($host) || $host === '') {
+            return false;
+        }
+
+        if ($this->isLocalHost($host) && !$this->isLocalHost($request->getHost())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function requestRoot(Request $request): string
+    {
+        $scheme = $request->headers->get('X-Forwarded-Proto')
+            ?: ($request->isSecure() ? 'https' : 'http');
+
+        $host = $request->getHttpHost();
+
+        if (str_ends_with($request->getHost(), '.laravel.cloud')) {
+            $scheme = 'https';
+        }
+
+        return $scheme . '://' . $host;
+    }
+
+    private function isLocalHost(string $host): bool
+    {
+        return in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            || str_ends_with($host, '.test')
+            || str_ends_with($host, '.local');
     }
 
     private function timezone(): string
