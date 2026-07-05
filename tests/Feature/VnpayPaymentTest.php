@@ -493,7 +493,7 @@ class VnpayPaymentTest extends TestCase
         $this->assertDatabaseCount('payments', 1);
     }
 
-    public function test_return_url_does_not_mark_payment_paid(): void
+    public function test_return_url_marks_payment_paid_when_verified_successful_callback(): void
     {
         $payment = $this->createPendingPayment();
         $payload = $this->signedPayload($payment);
@@ -503,9 +503,29 @@ class VnpayPaymentTest extends TestCase
         $response->assertOk();
         $this->assertDatabaseHas('orders', [
             'order_id' => $payment->order_id,
-            'payment_status' => Order::PAYMENT_STATUS_PENDING,
-            'is_paid' => false,
+            'payment_status' => Order::PAYMENT_STATUS_PAID,
+            'is_paid' => true,
         ]);
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => Payment::STATUS_PAID,
+            'provider_transaction_id' => '14123456',
+        ]);
+        $response->assertSee('Thanh toán thành công');
+    }
+
+    public function test_ipn_after_successful_return_is_idempotent(): void
+    {
+        $payment = $this->createPendingPayment();
+        $payload = $this->signedPayload($payment);
+
+        $this->actingAs($payment->order->customer)->get('/payment/vnpay/return?' . http_build_query($payload))->assertOk();
+        $paidAt = Payment::find($payment->id)->paid_at?->toDateTimeString();
+
+        $this->getJson('/payment/vnpay/ipn?' . http_build_query($payload))->assertJson(['RspCode' => '02']);
+
+        $this->assertSame($paidAt, Payment::find($payment->id)->paid_at?->toDateTimeString());
+        $this->assertDatabaseCount('payments', 1);
     }
 
     public function test_transaction_reference_is_unique(): void
