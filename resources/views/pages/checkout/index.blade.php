@@ -5,8 +5,9 @@
 
     <div class="checkout-main-area pb-100 pt-100" data-feedback-id="checkout.page" data-component="CheckoutPage">
         <div class="container">
-            <form id="checkout-form" action={{ route('checkout') }} method="POST" class="checkout-wrap pt-30"
-                data-feedback-id="checkout.form">
+            <form id="checkout-form" action="{{ route('checkout') }}" method="POST" class="checkout-wrap pt-30"
+                data-feedback-id="checkout.form" data-cod-action="{{ route('checkout') }}"
+                data-vnpay-action="{{ route('vnpay.create') }}">
                 @csrf
                 <div class="row">
                     <div class="col-lg-7">
@@ -20,14 +21,14 @@
                                                 <label>Receiver name <abbr class="required"
                                                         title="required">*</abbr></label>
                                                 <input id="receiver_name" type="text" name="receiver_name"
-                                                    value="{{ Auth::user()->full_name() }}" readonly>
+                                                    value="{{ Auth::user()->default_address->receiver_name ?: Auth::user()->full_name() }}">
                                             </div>
                                         </div>
                                         <div class="col-lg-6 col-md-6">
                                             <div class="billing-info mb-20">
                                                 <label>Phone <abbr class="required" title="required">*</abbr></label>
-                                                <input id="phone_number" type="phone" name="phone_number"
-                                                    value="{{ Auth::user()->default_address->phone_number }}" readonly>
+                                                <input id="phone_number" type="tel" name="phone_number"
+                                                    value="{{ Auth::user()->default_address->phone_number }}">
                                             </div>
                                         </div>
                                         <div class="col-lg-12">
@@ -35,7 +36,7 @@
                                                 <label>Street Address <abbr class="required"
                                                         title="required">*</abbr></label>
                                                 <input id="address" class="billing-address" type="text" name="address"
-                                                    value="{{ Auth::user()->default_address->address }}" readonly>
+                                                    value="{{ Auth::user()->default_address->address }}">
                                             </div>
                                         </div>
                                         <div class="col-lg-12">
@@ -60,7 +61,7 @@
                                         <div class="col-lg-6 col-md-6">
                                             <div class="billing-info mb-20">
                                                 <label>Phone <abbr class="required" title="required">*</abbr></label>
-                                                <input id="phone_number" type="phone" name="phone_number" value=""
+                                                <input id="phone_number" type="tel" name="phone_number" value=""
                                                     placeholder="">
                                             </div>
                                         </div>

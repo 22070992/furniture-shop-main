@@ -356,6 +356,13 @@ class OrderController extends Controller
             ], 422);
         }
 
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'redirect_url' => $redirectUrl,
+                'payment_method' => $paymentMethod,
+            ]);
+        }
+
         return response($redirectUrl);
     }
 

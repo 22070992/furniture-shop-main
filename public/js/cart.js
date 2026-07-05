@@ -340,14 +340,14 @@ jQuery(document).ready(function () {
     loadCheckoutProduct();
 
     $(document).on('click', '.js-change-address', function () {
-        var checkedRadio = $('.address-item input[type=radio]:checked');
+        var checkedRadio = $('#select-address-modal .address-item input[type=radio]:checked');
         if (checkedRadio.length > 0) {
             var addressItem = checkedRadio.closest('.address-item');
-            var receiverName = addressItem.find('.heading p').first().text();
-            var phoneNumber = addressItem.find('.heading p').last().text();
-            var address = addressItem.find('p').not('.heading p').text();
-            $('#receiver-name').val(receiverName);
-            $('#phone-number').val(phoneNumber);
+            var receiverName = addressItem.data('receiver-name') || addressItem.find('.heading p').first().text();
+            var phoneNumber = addressItem.data('phone-number') || addressItem.find('.heading p').last().text();
+            var address = addressItem.data('address') || addressItem.find('p').not('.heading p').text();
+            $('#receiver_name').val($.trim(receiverName));
+            $('#phone_number').val($.trim(phoneNumber));
             $('#address').val(address);
         } else {
             console.log('No address selected');
@@ -363,6 +363,11 @@ jQuery(document).ready(function () {
         }
 
         let data = form.serialize();
+        const paymentMethod = $('input[name="payment_method"]:checked').val();
+        const actionUrl =
+            paymentMethod === 'vnpay'
+                ? form.data('vnpay-action') || form.attr('action')
+                : form.data('cod-action') || form.attr('action');
 
         let checkout = JSON.parse(localStorage.getItem('checkout')) || [];
         if (checkout.length === 0) {
@@ -378,16 +383,23 @@ jQuery(document).ready(function () {
         submitButton.data('loading', true);
         submitButton.addClass('is-loading');
         submitButton.attr('disabled', true);
-        submitButton.text($('input[name="payment_method"]:checked').val() === 'vnpay' ? 'Redirecting to VNPay...' : 'Placing order...');
+        submitButton.text(paymentMethod === 'vnpay' ? 'Redirecting to VNPay...' : 'Placing order...');
 
         $.ajax({
-            url: '/checkout',
+            url: actionUrl,
             method: 'POST',
             data: data,
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
             },
             success: function (response) {
+                const redirectUrl = typeof response === 'string' ? response : response.redirect_url;
+
+                if (!redirectUrl) {
+                    showToast('Checkout succeeded but no redirect URL was returned.', 'error');
+                    return;
+                }
+
                 // delete checkout storage
 
                 let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -397,10 +409,7 @@ jQuery(document).ready(function () {
                 localStorage.removeItem('checkout');
 
                 // redirect to checkout page
-                console.log('====================================');
-                console.log(response);
-                console.log('====================================');
-                window.location.href = response;
+                window.location.assign(redirectUrl);
             },
             error: function (error) {
                 $('#checkout-error').removeClass('d-none');

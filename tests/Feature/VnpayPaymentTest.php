@@ -313,6 +313,27 @@ class VnpayPaymentTest extends TestCase
         $this->assertSame(8, ProductDetail::find('SKU-1')->quantities);
     }
 
+    public function test_ajax_vnpay_checkout_returns_redirect_url(): void
+    {
+        $response = $this->actingAs($this->user())
+            ->withHeader('X-Requested-With', 'XMLHttpRequest')
+            ->post('/checkout/vnpay', $this->checkoutPayload('vnpay'));
+
+        $response->assertOk()
+            ->assertJsonPath('payment_method', Order::PAYMENT_METHOD_VNPAY);
+
+        $this->assertStringContainsString(
+            'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+            $response->json('redirect_url')
+        );
+
+        $this->assertDatabaseHas('orders', [
+            'payment_method' => Order::PAYMENT_METHOD_VNPAY,
+            'payment_status' => Order::PAYMENT_STATUS_PENDING,
+            'total_price' => 2000000,
+        ]);
+    }
+
     public function test_cod_checkout_still_creates_unpaid_order(): void
     {
         $response = $this->actingAs($this->user())->post('/checkout', $this->checkoutPayload('cash-on-delivery'));
