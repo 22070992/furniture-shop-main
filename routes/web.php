@@ -97,7 +97,6 @@ Route::middleware([PublicMiddleware::class])->group(function () {
     Route::get('/', [PagesController::class, 'index'])->name('user');
     Route::get('/shop', [PagesController::class, 'shop'])->name('shop');
     Route::get('/about', [PagesController::class, 'about']);
-    Route::get('/contact', [PagesController::class, 'contact']);
     Route::get('/collections', [RoomCollectionController::class, 'index'])->name('collections.index');
     Route::get('/collections/{collection:slug}', [RoomCollectionController::class, 'show'])->name('collections.show');
     // products api

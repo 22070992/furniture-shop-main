@@ -42,7 +42,6 @@
         <script src="{{ asset('js/plugins/select2.min.js') }}" defer></script>
         <script src="{{ asset('js/plugins/easyzoom.js') }}" defer></script>
         <script src="{{ asset('js/plugins/slinky.min.js') }}" defer></script>
-        <script src="{{ asset('js/plugins/ajax-mail.js') }}" defer></script>
         {{-- Toastify --}}
         <script src="{{ asset('js/vendor/toastify.min.js') }}" defer></script>
         <!-- Main JS -->

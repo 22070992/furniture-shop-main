@@ -557,13 +557,6 @@ class PagesController extends Controller
         return view('pages.about.index', $data);
     }
 
-    public function contact()
-    {
-        $data = [
-            'page' => 'Contact us'
-        ];
-        return view('pages.contact.index', $data);
-    }
     public function account()
     {
         $data = [

@@ -16,7 +16,6 @@
                                 <li><a href="/myorders" data-feedback-id="site.nav.orders">MY ORDERS</a></li>
                                 <li><a href="/my-feedback" data-feedback-id="site.nav.feedback">MY FEEDBACK</a></li>
                                 <li><a href="/about" data-feedback-id="site.nav.about">ABOUT</a></li>
-                                <li><a href="/contact" data-feedback-id="site.nav.contact">CONTACT US</a></li>
                             </ul>
                         </nav>
                     </div>
@@ -115,9 +114,6 @@
                     </li>
                     <li>
                         <a href="/about">ABOUT US</a>
-                    </li>
-                    <li>
-                        <a href="/contact">CONTACT US</a>
                     </li>
                 </ul>
             </div>
