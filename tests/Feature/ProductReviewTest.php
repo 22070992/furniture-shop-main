@@ -404,6 +404,11 @@ class ProductReviewTest extends TestCase
         $this->assertSame($user->getKey(), $review->user_id);
         $this->assertDatabaseHas('review_images', ['review_id' => $review->id]);
         Storage::disk('public')->assertExists($review->images()->first()->image_path);
+
+        $this->get('/products/1')
+            ->assertOk()
+            ->assertSee('This chair is comfortable and matches the product description.')
+            ->assertSee('1 verified review');
     }
 
     public function test_cannot_review_same_order_detail_twice(): void
