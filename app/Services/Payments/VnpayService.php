@@ -103,8 +103,10 @@ class VnpayService
 
     public function successResponse(array $payload): bool
     {
+        $transactionStatus = $payload['vnp_TransactionStatus'] ?? null;
+
         return ($payload['vnp_ResponseCode'] ?? null) === '00'
-            && ($payload['vnp_TransactionStatus'] ?? null) === '00';
+            && ($transactionStatus === null || $transactionStatus === '' || $transactionStatus === '00');
     }
 
     public function paymentStatusFor(array $payload): string

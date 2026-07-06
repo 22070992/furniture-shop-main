@@ -514,6 +514,30 @@ class VnpayPaymentTest extends TestCase
         ]);
     }
 
+    public function test_successful_callback_without_transaction_status_updates_payment_and_order(): void
+    {
+        $payment = $this->createPendingPayment();
+        $payload = $this->signedPayload($payment, ['vnp_TransactionStatus' => null]);
+
+        unset($payload['vnp_TransactionStatus']);
+        $payload['vnp_SecureHash'] = app(VnpayService::class)->makeSecureHash($payload);
+
+        $this->getJson('/payment/vnpay/ipn?' . http_build_query($payload))->assertJson(['RspCode' => '00']);
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $payment->id,
+            'status' => Payment::STATUS_PAID,
+            'provider_transaction_id' => '14123456',
+            'response_code' => '00',
+            'transaction_status' => null,
+        ]);
+        $this->assertDatabaseHas('orders', [
+            'order_id' => $payment->order_id,
+            'payment_status' => Order::PAYMENT_STATUS_PAID,
+            'is_paid' => true,
+        ]);
+    }
+
     public function test_repeated_ipn_does_not_update_paid_order_again(): void
     {
         $payment = $this->createPendingPayment();
