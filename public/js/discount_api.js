@@ -169,9 +169,27 @@ jQuery.noConflict();
 
         // add product to discount
 
+        function paginationPages(currentPage, lastPage) {
+            const pages = new Set([1, lastPage]);
+
+            for (let page = currentPage - 2; page <= currentPage + 2; page += 1) {
+                if (page >= 1 && page <= lastPage) {
+                    pages.add(page);
+                }
+            }
+
+            return Array.from(pages).sort((firstPage, secondPage) => firstPage - secondPage);
+        }
+
         function renderPagination({ current_page, last_page }) {
-            let pagination = `<li class="page-item ${current_page === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${current_page - 1}">
+            const currentPage = Number(current_page) || 1;
+            const lastPage = Number(last_page) || 1;
+            const previousPage = Math.max(currentPage - 1, 1);
+            const nextPage = Math.min(currentPage + 1, lastPage);
+            let previousVisiblePage = 0;
+
+            let pagination = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${previousPage}">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="icon"
@@ -191,14 +209,24 @@ jQuery.noConflict();
             </a>
         </li>`;
 
-            for (let i = 0; i < last_page; i++) {
-                pagination += `
-                    <li class="page-item ${current_page === i + 1 ? 'active mx-1' : ''}">
-                        <a class="page-link " href="#" rel="first" data-page="${i + 1}">${i + 1}</a>
+            paginationPages(currentPage, lastPage).forEach((page) => {
+                if (previousVisiblePage && page - previousVisiblePage > 1) {
+                    pagination += `
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#">...</a>
                     </li>`;
-            }
-            pagination += `<li class="page-item ${current_page === last_page ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-page="${current_page + 1}">
+                }
+
+                pagination += `
+                    <li class="page-item ${currentPage === page ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${page}">${page}</a>
+                    </li>`;
+
+                previousVisiblePage = page;
+            });
+
+            pagination += `<li class="page-item ${currentPage === lastPage ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${nextPage}">
                 next
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
                     viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
@@ -208,7 +236,7 @@ jQuery.noConflict();
                 </svg>
             </a>
         </li>`;
-            $('.pagination').html(pagination);
+            return pagination;
         }
 
         function debounce(func, wait) {
@@ -323,8 +351,15 @@ jQuery.noConflict();
         );
 
         $(document).on('click', '.js-detailed-products-pagination .pagination .page-link', function (event) {
-            var button = $(event.target);
+            event.preventDefault();
+            const button = $(event.target).closest('.page-link');
+            const item = button.closest('.page-item');
             const page = button.data('page');
+
+            if (item.hasClass('disabled') || !page) {
+                return;
+            }
+
             filterDetailedProducts({ page });
         });
 

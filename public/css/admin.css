@@ -73,6 +73,18 @@ body {
     margin: 0 !important;
 }
 
+.admin-ajax-pagination {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: flex-end;
+    max-width: 100%;
+}
+
+.admin-ajax-pagination .page-item {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
 /* custom navbar */
 .custom-navbar-nav {
     padding-left: 10px;

@@ -1,4 +1,4 @@
-    <ul class="pagination my-2 ms-auto">
+    <ul class="pagination admin-ajax-pagination my-2 ms-auto">
         <li class="page-item @if ($paginator->onFirstPage()) disabled @endif">
             <a class="page-link" data-page="{{ $paginator->currentPage() - 1 }}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
@@ -13,7 +13,7 @@
         {{-- Display first page --}}
         @if ($paginator->currentPage() > 3)
             <li class="page-item">
-                <a class="page-link" rel="first" data-page="{{ $paginator->url(1) }}">1</a>
+                <a class="page-link" rel="first" data-page="1">1</a>
             </li>
         @endif
 
