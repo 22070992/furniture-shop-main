@@ -13,8 +13,8 @@
                         <div class="row row-cards">
                             <div class="col-12">
                                 <label for="" class="form-label">Supplier</label>
-                                <select id="supplier_id" name="supplier_id" type="text" class="form-select">
-                                    <option value="-1" selected>Không
+                                <select id="supplier_id" name="supplier_id" type="text" class="form-select" required>
+                                    <option value="" selected disabled>Choose supplier
                                     </option>
                                     @foreach ($suppliers as $supplier)
                                         <option value="{{ $supplier->supplier_id }}">{{ $supplier->name }}

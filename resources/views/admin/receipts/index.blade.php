@@ -104,11 +104,11 @@
                                                 </td>
                                                 <td class="text-muted">
                                                     <div>
-                                                        <strong>{{ $receipt->supplier->name }}</strong> |
-                                                        {{ $receipt->supplier->phone_number }}
+                                                        <strong>{{ $receipt->supplier?->name ?? 'Unknown supplier' }}</strong> |
+                                                        {{ $receipt->supplier?->phone_number ?? 'No phone' }}
                                                     </div>
                                                     <div>
-                                                        {{ $receipt->supplier->address }}
+                                                        {{ $receipt->supplier?->address ?? 'No address' }}
                                                     </div>
                                                 </td>
                                                 <td class="text-muted">
@@ -119,12 +119,12 @@
 
                                                 <td class="text-muted">
                                                     <div>
-                                                        <strong>{{ $receipt->employee->first_name }}
-                                                            {{ $receipt->employee->last_name }}</strong> |
-                                                        {{ $receipt->employee->default_address->phone_number }}
+                                                        <strong>{{ $receipt->employee?->first_name ?? 'Unknown' }}
+                                                            {{ $receipt->employee?->last_name ?? 'employee' }}</strong> |
+                                                        {{ $receipt->employee?->default_address?->phone_number ?? 'No phone' }}
                                                     </div>
                                                     <div>
-                                                        {{ $receipt->employee->default_address->address }}
+                                                        {{ $receipt->employee?->default_address?->address ?? 'No default address' }}
                                                     </div>
                                                 </td>
                                                 <td>

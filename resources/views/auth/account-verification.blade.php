@@ -9,6 +9,16 @@
                 <strong>{{ $user->email }}
                 </strong>.
             </p>
+            @if (session('status'))
+                <div class="alert alert-success" role="alert">
+                    {{ session('status') }}
+                </div>
+            @endif
+            @if ($errors->has('otp'))
+                <div class="alert alert-danger" role="alert">
+                    {{ $errors->first('otp') }}
+                </div>
+            @endif
             @if (app()->environment('local') && session('verification_otp'))
                 <div class="alert alert-info" role="alert">
                     Local verification code: <strong>{{ session('verification_otp') }}</strong>

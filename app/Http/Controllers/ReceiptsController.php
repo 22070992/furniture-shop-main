@@ -94,9 +94,14 @@ class ReceiptsController extends Controller
     }
     public function create(Request $request)
     {
+        $supplierId = (int) $request->input('supplier_id');
+        if (!Supplier::whereKey($supplierId)->exists()) {
+            return response()->json(['errors' => ['supplier_id' => ['Please choose a valid supplier.']]], 422);
+        }
+
         $receipt = ReceivingReport::create([
             'total_price' => 0,
-            'supplier_id' => $request->input('supplier_id'),
+            'supplier_id' => $supplierId,
             'created_by' => Auth::user()->user_id,
         ]);
 
@@ -108,8 +113,8 @@ class ReceiptsController extends Controller
         $receipt_id = $request->route('receipt_id');
         $receipt = ReceivingReport::where('receiving_report_id', $receipt_id)->with('employee.default_address', 'supplier')->first();
         if (!$receipt) abort(404, 'Receipt not found!');
-        $detailed_receipts = ReceivingReportDetails::where('receiving_report_id', $receipt_id)->with('detailed_product.images')->paginate(5);
-        $detailed_products = ProductDetail::where('is_deleted', 0)->paginate(5);
+        $detailed_receipts = ReceivingReportDetails::where('receiving_report_id', $receipt_id)->with('detailed_product.images', 'detailed_product.color')->paginate(5);
+        $detailed_products = ProductDetail::where('is_deleted', 0)->with('images', 'color')->paginate(5);
         $data = [
             'page' => 'Order Details',
             'receipt' => $receipt,

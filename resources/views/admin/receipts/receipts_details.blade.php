@@ -80,9 +80,9 @@
                     <div class="card">
                         <div class="card-body">
                             <h3>Supplier Infor</h3>
-                            <address><strong>{{ $receipt->supplier->name }} <br>
-                                </strong>{{ $receipt->supplier->address }}<br>
-                                {{ $receipt->supplier->phone_number }}<br>
+                            <address><strong>{{ $receipt->supplier?->name ?? 'Unknown supplier' }} <br>
+                                </strong>{{ $receipt->supplier?->address ?? 'No address' }}<br>
+                                {{ $receipt->supplier?->phone_number ?? 'No phone' }}<br>
 
                             </address>
                         </div>
@@ -95,9 +95,11 @@
                                 <h3>Created by</h3>
                                 <address>
                                     <strong>{{ $receipt->employee->full_name() }}<br></strong>
-                                    @if (isset($receipt->employee->default_addres))
+                                    @if ($receipt->employee?->default_address)
                                         {{ $receipt->employee->default_address->address }}<br>
                                         {{ $receipt->employee->default_address->phone_number }}<br>
+                                    @else
+                                        No default address<br>
                                     @endif
 
 
@@ -133,13 +135,13 @@
                                                 <td>
                                                     <div class="d-flex py-1 align-items-center">
                                                         <span class="avatar me-2"
-                                                            style="background-image: url(@if (isset($detailed_receipt->detailed_product->images->first()->url)) {{ $detailed_receipt->detailed_product->images->first()->url }} @endif); width: 80px; height: 80px;">
+                                                            style="background-image: url(@if ($detailed_receipt->detailed_product?->images?->first()?->url) {{ $detailed_receipt->detailed_product->images->first()->url }} @endif); width: 80px; height: 80px;">
                                                         </span>
                                                         <div class="flex-fill">
                                                             <div class="font-weight-medium">
                                                                 <h3 class="m-0">
-                                                                    {{ $detailed_receipt->detailed_product->name }}
-                                                                    @if ($detailed_receipt->detailed_product->created_at->diffInDays() < 7)
+                                                                    {{ $detailed_receipt->detailed_product?->name ?? 'Deleted or missing product' }}
+                                                                    @if ($detailed_receipt->detailed_product?->created_at && $detailed_receipt->detailed_product->created_at->diffInDays() < 7)
                                                                         <span
                                                                             class="badge badge-sm bg-green-lt text-uppercase ms-auto">New
                                                                         </span>
@@ -148,7 +150,7 @@
                                                             </div>
                                                             <div class="text-muted">
                                                                 <a href="#"
-                                                                    class="text-reset js-sku">#{{ $detailed_receipt->detailed_product->sku }}</a>
+                                                                    class="text-reset js-sku">#{{ $detailed_receipt->detailed_product?->sku ?? $detailed_receipt->sku }}</a>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -156,22 +158,22 @@
                                                 </td>
                                                 <td>
                                                     <p class="m-0">Color:
-                                                        {{ $detailed_receipt->detailed_product->color->name }}</p>
-                                                    <p class="my-1">Size: {{ $detailed_receipt->detailed_product->size }}
+                                                        {{ $detailed_receipt->detailed_product?->color?->name ?? 'No color' }}</p>
+                                                    <p class="my-1">Size: {{ $detailed_receipt->detailed_product?->size ?? 'No size' }}
                                                     </p>
                                                 </td>
                                                 <td class="text-danger">{{ number_format($detailed_receipt->unit_price) }}đ
                                                 </td>
                                                 <td>{{ $detailed_receipt->quantities }}</td>
-                                                <td>{{ $detailed_receipt->detailed_product->warranty_month }} Months</td>
+                                                <td>{{ $detailed_receipt->detailed_product?->warranty_month ?? 0 }} Months</td>
                                                 <td class="text-success">
                                                     {{ number_format($detailed_receipt->unit_price * $detailed_receipt->quantities, 0, '.', ',') }}đ
                                                 <td>
                                                     @can('delete receipt')
                                                         <a href="#" class="btn p-2"
-                                                            data-sku="{{ $detailed_receipt->detailed_product->sku }}"
+                                                            data-sku="{{ $detailed_receipt->detailed_product?->sku ?? $detailed_receipt->sku }}"
                                                             data-receipt-id="{{ $detailed_receipt->receiving_report_id }}"
-                                                            data-name="{{ $detailed_receipt->detailed_product->name }}"
+                                                            data-name="{{ $detailed_receipt->detailed_product?->name ?? 'Deleted or missing product' }}"
                                                             data-bs-toggle="modal" data-bs-target="#delete-confirm-modal">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="24"
                                                                 height="24" viewBox="0 0 24 24" fill="none"

@@ -58,7 +58,10 @@ jQuery.noConflict();
                     console.log(error);
                     $('#create_receipts_response').removeClass('d-none alert-success');
                     $('#create_receipts_response').addClass('alert-danger');
-                    $('#create_receipts_response').html(Object.values(error.responseJSON.errors)[0][0]);
+                    const message = error.responseJSON?.errors
+                        ? Object.values(error.responseJSON.errors)[0][0]
+                        : 'Could not create receipt. Please try again.';
+                    $('#create_receipts_response').html(message);
                 },
             });
         });
@@ -69,16 +72,20 @@ jQuery.noConflict();
         });
 
         function createReceiptElement({ receipt }) {
+            const supplier = receipt.supplier || {};
+            const employee = receipt.employee || {};
+            const defaultAddress = employee.default_address || {};
+
             return `
             <td>${receipt.receiving_report_id}</td>
             </td>
             <td class="text-muted">
                 <div>
-                    <strong>${receipt.supplier.name}</strong> |
-                    ${receipt.supplier.phone_number}
+                    <strong>${supplier.name || 'Unknown supplier'}</strong> |
+                    ${supplier.phone_number || 'No phone'}
                 </div>
                 <div>
-                ${receipt.supplier.address}
+                ${supplier.address || 'No address'}
                 </div>
             </td>
             <td class="text-muted">
@@ -88,12 +95,12 @@ jQuery.noConflict();
 
             <td class="text-muted">
                 <div>
-                    <strong>${receipt.employee.first_name} ${receipt.employee.last_name} 
+                    <strong>${employee.first_name || 'Unknown'} ${employee.last_name || 'employee'} 
                         </strong> |
-                        ${receipt.employee.default_address.phone_number} 
+                        ${defaultAddress.phone_number || 'No phone'} 
                 </div>
                 <div>
-                ${receipt.employee.default_address.address} 
+                ${defaultAddress.address || 'No default address'} 
                 </div>
             </td>
             <td>
@@ -255,7 +262,7 @@ jQuery.noConflict();
                         </div>
                     </td>
                     <td>
-                        <div><p class="text-reset m-0">${detailed_product.color.name}</p></div>
+                        <div><p class="text-reset m-0">${detailed_product.color?.name || 'No color'}</p></div>
                         <div class="text-muted "><p class="text-reset m-0">${detailed_product.size}</p></div>
                     </td>
                     <td>

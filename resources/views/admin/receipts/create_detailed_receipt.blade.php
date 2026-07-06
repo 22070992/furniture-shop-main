@@ -62,7 +62,7 @@
                                                         <td>
                                                             <div>
                                                                 <p class="text-reset m-0">
-                                                                    {{ $detailed_product->color->name }}</p>
+                                                                    {{ $detailed_product->color?->name ?? 'No color' }}</p>
                                                             </div>
                                                             <div class="text-muted ">
                                                                 <p class="text-reset m-0">{{ $detailed_product->size }}

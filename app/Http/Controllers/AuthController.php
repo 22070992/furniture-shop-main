@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 
 
 class AuthController extends Controller
@@ -59,17 +60,71 @@ class AuthController extends Controller
     {
         session()->flash('verification_otp', $otp);
 
+        if ($message = $this->mailConfigurationError()) {
+            Log::warning('Account verification email is not configured for real delivery.', [
+                'user_id' => $user->user_id,
+                'email' => $user->email,
+                'mailer' => config('mail.default'),
+                'reason' => $message,
+            ]);
+
+            throw new RuntimeException($message);
+        }
+
         try {
             Mail::raw('Your code is ' . $otp, function (Message $message) use ($user) {
-                $message->to($user->email)->subject('Your Furemir verification code');
+                $message->to($user->email)
+                    ->subject('Your Furemir verification code');
             });
         } catch (\Throwable $exception) {
-            Log::warning('Could not send account verification email.', [
+            Log::error('Could not send account verification email.', [
                 'user_id' => $user->user_id,
                 'email' => $user->email,
                 'error' => $exception->getMessage(),
             ]);
+
+            throw new RuntimeException('Could not send the verification email. Please check the Gmail SMTP settings and try again.');
         }
+    }
+
+    private function mailConfigurationError(): ?string
+    {
+        $mailer = (string) config('mail.default');
+
+        if (in_array($mailer, ['log', 'array'], true)) {
+            return 'Email delivery is not configured for Gmail. Set MAIL_MAILER=smtp, MAIL_USERNAME and MAIL_PASSWORD in .env, then run php artisan optimize:clear.';
+        }
+
+        if ($mailer !== 'smtp') {
+            return null;
+        }
+
+        $username = (string) config('mail.mailers.smtp.username');
+        $password = (string) config('mail.mailers.smtp.password');
+        $from = (string) config('mail.from.address');
+
+        $missing = [];
+        if (!filled(config('mail.mailers.smtp.host'))) {
+            $missing[] = 'MAIL_HOST';
+        }
+        if (!filled(config('mail.mailers.smtp.port'))) {
+            $missing[] = 'MAIL_PORT';
+        }
+        if (!filled($username)) {
+            $missing[] = 'MAIL_USERNAME';
+        }
+        if (!filled($password) || $password === 'your_application_password') {
+            $missing[] = 'MAIL_PASSWORD';
+        }
+        if (!filled($from) || str_ends_with($from, '.local')) {
+            $missing[] = 'MAIL_FROM_ADDRESS';
+        }
+
+        if ($missing !== []) {
+            return 'Gmail SMTP is missing required settings: ' . implode(', ', $missing) . '. Update .env and run php artisan optimize:clear.';
+        }
+
+        return null;
     }
     public function forgot_password_verification_ui(Request $request)
     {
@@ -119,7 +174,11 @@ class AuthController extends Controller
                 'last_name' => $request->input('last_name'),
             ]);
             $otp = $this->createOrRefreshOtp($user);
-            $this->sendOtp($user, $otp);
+            try {
+                $this->sendOtp($user, $otp);
+            } catch (RuntimeException $exception) {
+                return response()->json(['errors' => ['message' => [$exception->getMessage()]]], 503);
+            }
 
             // response
             return response()->json(['message' => 'User created.', 'user_id' => $user->user_id], 200);
@@ -132,7 +191,11 @@ class AuthController extends Controller
                 'avatar' => config('app.url') . 'images/default/default_avatar.jpg',
             ]);
             $otp = $this->createOrRefreshOtp($user);
-            $this->sendOtp($user, $otp);
+            try {
+                $this->sendOtp($user, $otp);
+            } catch (RuntimeException $exception) {
+                return response()->json(['errors' => ['message' => [$exception->getMessage()]]], 503);
+            }
 
             // response
             return response()->json(['message' => 'User created.', 'user_id' => $user->user_id], 200);
@@ -169,14 +232,21 @@ class AuthController extends Controller
     public function resend_otp(Request $request)
     {
         $user_id = $request->route('user_id');
-        $user_verify = UserVerify::where('user_id', $user_id)->first();
         $user = User::find($user_id);
-        if ($user && $user_verify) {
-            $otp = $this->createOrRefreshOtp($user);
+
+        if (!$user || $user->is_verified) {
+            return back()->withErrors(['otp' => 'Could not find an unverified account for this request.'])->withInput($request->input());
+        }
+
+        $otp = $this->createOrRefreshOtp($user);
+
+        try {
             $this->sendOtp($user, $otp);
-            // response
-            return back();
-        } else return back()->withErrors(['otp' => 'Some went wrong!'])->withInput($request->input());
+        } catch (RuntimeException $exception) {
+            return back()->withErrors(['otp' => $exception->getMessage()])->withInput($request->input());
+        }
+
+        return back()->with('status', 'A new verification code has been sent to your email.');
     }
     public function logout()
     {

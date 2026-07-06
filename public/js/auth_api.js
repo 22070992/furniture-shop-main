@@ -45,7 +45,10 @@ jQuery.noConflict();
                 error: function (error) {
                     $('#loading').addClass('d-none');
                     $('#js-register-error').removeClass('d-none');
-                    $('#js-register-error').html('*' + Object.values(error.responseJSON.errors)[0][0]);
+                    const message = error.responseJSON?.errors
+                        ? Object.values(error.responseJSON.errors)[0][0]
+                        : 'Unable to create account. Please try again.';
+                    $('#js-register-error').html('*' + message);
                 },
             });
         });
@@ -87,7 +90,8 @@ jQuery.noConflict();
                     window.location.href = '/';
                 },
                 error: function (error) {
-                    $('#js-account-verify-response').html(error.responseJSON.message);
+                    const message = error.responseJSON?.message || 'Unable to verify this code. Please try again.';
+                    $('#js-account-verify-response').html(message);
                 },
             });
         });
