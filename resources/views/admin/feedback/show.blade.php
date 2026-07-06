@@ -66,8 +66,6 @@
                             <dl class="row">
                                 <dt class="col-md-3">Description</dt>
                                 <dd class="col-md-9">{{ $feedback->description }}</dd>
-                                <dt class="col-md-3">Expected result</dt>
-                                <dd class="col-md-9">{{ $feedback->expected_result ?: 'Not provided.' }}</dd>
                                 <dt class="col-md-3">Element text</dt>
                                 <dd class="col-md-9">{{ $feedback->element_text ?: 'Empty' }}</dd>
                                 <dt class="col-md-3">CSS selector</dt>
@@ -159,14 +157,6 @@
                                 <select name="status" class="form-select">
                                     @foreach ($statuses as $status)
                                         <option value="{{ $status }}" @selected($feedback->status === $status)>{{ $status }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Priority</label>
-                                <select name="priority" class="form-select">
-                                    @foreach ($priorities as $priority)
-                                        <option value="{{ $priority }}" @selected($feedback->priority === $priority)>{{ $priority }}</option>
                                     @endforeach
                                 </select>
                             </div>

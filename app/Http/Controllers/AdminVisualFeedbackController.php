@@ -20,7 +20,7 @@ class AdminVisualFeedbackController extends Controller
             ->withCount('attachments')
             ->latest();
 
-        foreach (['status', 'priority', 'type', 'assigned_to', 'user_id', 'page_path'] as $field) {
+        foreach (['status', 'type', 'assigned_to', 'user_id', 'page_path'] as $field) {
             if ($request->filled($field)) {
                 $query->where($field, $request->input($field));
             }
@@ -51,7 +51,6 @@ class AdminVisualFeedbackController extends Controller
         return view('admin.feedback.index', [
             'feedbacks' => $query->paginate(15)->withQueryString(),
             'statuses' => VisualFeedback::STATUSES,
-            'priorities' => VisualFeedback::PRIORITIES,
             'types' => VisualFeedback::TYPES,
             'admins' => User::where('is_staff', true)->orderBy('first_name')->get(),
             'submitters' => User::whereIn('user_id', VisualFeedback::query()->select('user_id')->distinct())
@@ -78,7 +77,6 @@ class AdminVisualFeedbackController extends Controller
         return view('admin.feedback.show', [
             'feedback' => $feedback,
             'statuses' => VisualFeedback::STATUSES,
-            'priorities' => VisualFeedback::PRIORITIES,
             'types' => VisualFeedback::TYPES,
             'admins' => User::where('is_staff', true)->orderBy('first_name')->get(),
             'codexPayload' => $this->codexPayload($feedback),
@@ -89,7 +87,7 @@ class AdminVisualFeedbackController extends Controller
     public function update(UpdateVisualFeedbackRequest $request, VisualFeedback $feedback)
     {
         $data = $request->validated();
-        $tracked = ['status', 'priority', 'assigned_to', 'admin_note', 'type', 'parent_id'];
+        $tracked = ['status', 'assigned_to', 'admin_note', 'type', 'parent_id'];
         $changes = [];
 
         foreach ($tracked as $field) {
@@ -171,7 +169,6 @@ class AdminVisualFeedbackController extends Controller
             'total' => VisualFeedback::count(),
             'open' => VisualFeedback::where('status', 'Open')->count(),
             'in_progress' => VisualFeedback::where('status', 'In Progress')->count(),
-            'critical' => VisualFeedback::where('priority', 'Critical')->count(),
             'resolved' => VisualFeedback::whereIn('status', ['Resolved', 'Closed'])->count(),
         ];
     }
@@ -185,11 +182,9 @@ class AdminVisualFeedbackController extends Controller
             'page_title' => $feedback->page_title,
             'route_name' => $feedback->route_name,
             'type' => $feedback->type,
-            'priority' => $feedback->priority,
             'status' => $feedback->status,
             'title' => $feedback->title,
             'description' => $feedback->description,
-            'expected_result' => $feedback->expected_result,
             'element' => [
                 'tag' => $feedback->element_tag,
                 'text' => $feedback->element_text,
@@ -219,7 +214,6 @@ class AdminVisualFeedbackController extends Controller
             . "Trang bị lỗi:\n{$feedback->page_url}\n\n"
             . "Element:\n{$feedback->css_selector}\n\n"
             . "Vấn đề:\n{$feedback->description}\n\n"
-            . "Kết quả mong muốn:\n" . ($feedback->expected_result ?: 'Chưa cung cấp.') . "\n\n"
             . "Hãy:\n"
             . "1. Xác định view/component và source code tạo ra element này.\n"
             . "2. Tìm nguyên nhân gốc.\n"

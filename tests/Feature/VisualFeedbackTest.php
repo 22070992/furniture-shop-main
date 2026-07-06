@@ -169,10 +169,8 @@ class VisualFeedbackTest extends TestCase
     {
         return array_merge([
             'type' => 'Bug',
-            'priority' => 'High',
             'title' => 'Product image is wrong',
             'description' => 'The selected product image does not match the product name.',
-            'expected_result' => 'Display the correct product image.',
             'page_url' => 'http://localhost:8000/shop',
             'page_path' => '/shop',
             'page_title' => 'Shop',
@@ -287,14 +285,12 @@ class VisualFeedbackTest extends TestCase
         $this->actingAs($admin)
             ->patch(route('admin.feedback.update', $feedback), [
                 'status' => 'Resolved',
-                'priority' => 'Critical',
                 'assigned_to' => $admin->getKey(),
             ])
             ->assertRedirect();
 
         $feedback->refresh();
         $this->assertSame('Resolved', $feedback->status);
-        $this->assertSame('Critical', $feedback->priority);
         $this->assertSame($admin->getKey(), $feedback->assigned_to);
         $this->assertNotNull($feedback->resolved_at);
     }

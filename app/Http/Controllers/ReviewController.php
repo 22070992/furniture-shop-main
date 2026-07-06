@@ -42,6 +42,8 @@ class ReviewController extends Controller
 
         try {
             DB::transaction(function () use ($request, $data, $user, $orderDetail, $existingReview, $orderDetailKey, &$storedPaths) {
+                $approvedAt = now();
+
                 if ($existingReview) {
                     foreach ($existingReview->images as $image) {
                         Storage::disk('public')->delete($image->image_path);
@@ -51,10 +53,10 @@ class ReviewController extends Controller
                     $existingReview->update([
                         'rating' => $data['rating'],
                         'content' => $data['content'],
-                        'status' => Review::STATUS_PENDING,
+                        'status' => Review::STATUS_APPROVED,
                         'admin_note' => null,
                         'approved_by' => null,
-                        'approved_at' => null,
+                        'approved_at' => $approvedAt,
                     ]);
 
                     $review = $existingReview;
@@ -67,7 +69,8 @@ class ReviewController extends Controller
                         'order_detail_id' => $orderDetailKey,
                         'rating' => $data['rating'],
                         'content' => $data['content'],
-                        'status' => Review::STATUS_PENDING,
+                        'status' => Review::STATUS_APPROVED,
+                        'approved_at' => $approvedAt,
                     ]);
                 }
 
@@ -92,6 +95,6 @@ class ReviewController extends Controller
             throw $exception;
         }
 
-        return back()->with('success', 'Your review was submitted and is waiting for approval.');
+        return back()->with('success', 'Your review was submitted and published.');
     }
 }

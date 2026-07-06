@@ -44,11 +44,6 @@
                 </div>
                 <div class="col-sm-6 col-lg">
                     <div class="card card-sm">
-                        <div class="card-body"><div class="subheader">Critical</div><div class="h2 text-danger">{{ $stats['critical'] }}</div></div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-lg">
-                    <div class="card card-sm">
                         <div class="card-body"><div class="subheader">Resolved</div><div class="h2 text-success">{{ $stats['resolved'] }}</div></div>
                     </div>
                 </div>
@@ -70,15 +65,6 @@
                                         <option value="">All</option>
                                         @foreach ($statuses as $status)
                                             <option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Priority</label>
-                                    <select name="priority" class="form-select">
-                                        <option value="">All</option>
-                                        @foreach ($priorities as $priority)
-                                            <option value="{{ $priority }}" @selected(request('priority') === $priority)>{{ $priority }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -175,7 +161,6 @@
                                 <th>User</th>
                                 <th>Page</th>
                                 <th>Type</th>
-                                <th>Priority</th>
                                 <th>Status</th>
                                 <th>Assignee</th>
                                 <th>Created</th>
@@ -204,14 +189,13 @@
                                     </td>
                                     <td class="text-break">{{ $feedback->page_path }}</td>
                                     <td>{{ $feedback->type }}</td>
-                                    <td><span class="badge bg-orange-lt">{{ $feedback->priority }}</span></td>
                                     <td><span class="badge bg-blue-lt">{{ $feedback->status }}</span></td>
                                     <td>{{ $feedback->assignee?->full_name() ?? 'Unassigned' }}</td>
                                     <td>{{ $feedback->created_at->format('d/m/Y H:i') }}</td>
                                     <td><a class="btn btn-sm" href="{{ route('admin.feedback.show', $feedback) }}">View</a></td>
                                 </tr>
                             @empty
-                                <tr><td colspan="11" class="text-center text-muted">No feedback found.</td></tr>
+                                <tr><td colspan="10" class="text-center text-muted">No feedback found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

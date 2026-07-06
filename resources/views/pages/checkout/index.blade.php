@@ -39,14 +39,6 @@
                                                     value="{{ Auth::user()->default_address->address }}">
                                             </div>
                                         </div>
-                                        <div class="col-lg-12">
-                                            <div class="change-address-wrapper">
-                                                <button type="button" data-bs-toggle="modal"
-                                                    data-bs-target="#select-address-modal"><i class="ti-pencil-alt"></i>
-                                                    Another
-                                                    address</button>
-                                            </div>
-                                        </div>
                                     </div>
                                 @else
                                     <div class="row close-toggle">
@@ -131,6 +123,4 @@
             </form>
         </div>
     </div>
-    {{-- Modal --}}
-    @include('pages.checkout.select-address-modal')
 @endsection

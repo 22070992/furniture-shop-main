@@ -44,7 +44,6 @@ class VisualFeedbackController extends Controller
             'new_value' => [
                 'status' => $feedback->status,
                 'type' => $feedback->type,
-                'priority' => $feedback->priority,
             ],
         ]);
 

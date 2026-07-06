@@ -339,20 +339,6 @@ jQuery(document).ready(function () {
     }
     loadCheckoutProduct();
 
-    $(document).on('click', '.js-change-address', function () {
-        var checkedRadio = $('#select-address-modal .address-item input[type=radio]:checked');
-        if (checkedRadio.length > 0) {
-            var addressItem = checkedRadio.closest('.address-item');
-            var receiverName = addressItem.data('receiver-name') || addressItem.find('.heading p').first().text();
-            var phoneNumber = addressItem.data('phone-number') || addressItem.find('.heading p').last().text();
-            var address = addressItem.data('address') || addressItem.find('p').not('.heading p').text();
-            $('#receiver_name').val($.trim(receiverName));
-            $('#phone_number').val($.trim(phoneNumber));
-            $('#address').val(address);
-        } else {
-            console.log('No address selected');
-        }
-    });
     $(document).on('submit', '#checkout-form', function (event) {
         event.preventDefault();
         const form = $(this);

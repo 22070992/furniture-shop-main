@@ -39,7 +39,7 @@ class HomeController extends Controller
             'total' => VisualFeedback::count(),
             'open' => VisualFeedback::where('status', 'Open')->count(),
             'in_progress' => VisualFeedback::where('status', 'In Progress')->count(),
-            'critical' => VisualFeedback::where('priority', 'Critical')->whereNotIn('status', ['Resolved', 'Closed'])->count(),
+            'resolved' => VisualFeedback::whereIn('status', ['Resolved', 'Closed'])->count(),
         ];
         $latest_feedbacks = VisualFeedback::with('user')
             ->latest()

@@ -386,7 +386,7 @@ class ProductReviewTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_valid_user_can_create_pending_review_with_images(): void
+    public function test_valid_user_can_create_published_review_with_images(): void
     {
         Storage::fake('public');
         $user = $this->user();
@@ -399,7 +399,8 @@ class ProductReviewTest extends TestCase
             ->assertSessionHas('success');
 
         $review = Review::first();
-        $this->assertSame(Review::STATUS_PENDING, $review->status);
+        $this->assertSame(Review::STATUS_APPROVED, $review->status);
+        $this->assertNotNull($review->approved_at);
         $this->assertSame($user->getKey(), $review->user_id);
         $this->assertDatabaseHas('review_images', ['review_id' => $review->id]);
         Storage::disk('public')->assertExists($review->images()->first()->image_path);

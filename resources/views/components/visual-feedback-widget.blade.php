@@ -46,31 +46,20 @@
             </div>
 
             <form class="vf-form" data-visual-feedback-ui enctype="multipart/form-data">
-                <div class="vf-grid">
-                    <label>
-                        <span>Loại feedback *</span>
-                        <select name="type" required>
-                            <option>Bug</option>
-                            <option>UI/UX</option>
-                            <option>Content</option>
-                            <option>Product information</option>
-                            <option>Wrong image</option>
-                            <option>Feature request</option>
-                            <option>Performance</option>
-                            <option>Accessibility</option>
-                            <option>Other</option>
-                        </select>
-                    </label>
-                    <label>
-                        <span>Mức độ ưu tiên *</span>
-                        <select name="priority" required>
-                            <option>Low</option>
-                            <option selected>Medium</option>
-                            <option>High</option>
-                            <option>Critical</option>
-                        </select>
-                    </label>
-                </div>
+                <label>
+                    <span>Loại feedback *</span>
+                    <select name="type" required>
+                        <option>Bug</option>
+                        <option>UI/UX</option>
+                        <option>Content</option>
+                        <option>Product information</option>
+                        <option>Wrong image</option>
+                        <option>Feature request</option>
+                        <option>Performance</option>
+                        <option>Accessibility</option>
+                        <option>Other</option>
+                    </select>
+                </label>
 
                 <label>
                     <span>Tiêu đề *</span>
@@ -79,10 +68,6 @@
                 <label>
                     <span>Mô tả *</span>
                     <textarea name="description" rows="4" required placeholder="Mô tả vấn đề bạn thấy trên giao diện"></textarea>
-                </label>
-                <label>
-                    <span>Kết quả mong muốn</span>
-                    <textarea name="expected_result" rows="3" placeholder="Bạn muốn phần này hoạt động hoặc hiển thị như thế nào?"></textarea>
                 </label>
                 <label>
                     <span>File đính kèm</span>

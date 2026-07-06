@@ -372,10 +372,10 @@
                                     </a>
                                 </div>
                                 <div class="col-sm-6 col-lg-3">
-                                    <a href="{{ route('admin.feedback.index', ['priority' => 'Critical']) }}"
+                                    <a href="{{ route('admin.feedback.index', ['status' => 'Resolved']) }}"
                                         class="d-block h-100 border rounded p-3 text-reset text-decoration-none">
-                                        <div class="subheader">Critical chưa đóng</div>
-                                        <div class="h2 mb-0 text-danger">{{ $feedback_stats['critical'] }}</div>
+                                        <div class="subheader">Đã xử lý</div>
+                                        <div class="h2 mb-0 text-success">{{ $feedback_stats['resolved'] }}</div>
                                     </a>
                                 </div>
                             </div>
@@ -388,7 +388,6 @@
                                             <th>Tiêu đề</th>
                                             <th>Người gửi</th>
                                             <th>Trang</th>
-                                            <th>Ưu tiên</th>
                                             <th>Trạng thái</th>
                                             <th></th>
                                         </tr>
@@ -408,7 +407,6 @@
                                                     <div class="text-muted small">{{ $feedback->created_by_role }}</div>
                                                 </td>
                                                 <td class="text-break">{{ $feedback->page_path }}</td>
-                                                <td><span class="badge bg-orange-lt">{{ $feedback->priority }}</span></td>
                                                 <td><span class="badge bg-blue-lt">{{ $feedback->status }}</span></td>
                                                 <td class="text-end">
                                                     <a href="{{ route('admin.feedback.show', $feedback) }}"
@@ -417,7 +415,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="7" class="text-center text-muted">
+                                                <td colspan="6" class="text-center text-muted">
                                                     Chưa có feedback nào.
                                                 </td>
                                             </tr>

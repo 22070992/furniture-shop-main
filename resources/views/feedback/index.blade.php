@@ -53,7 +53,6 @@
                                 <div class="card-body">
                                     <div class="d-flex gap-2 flex-wrap mb-2">
                                         <span class="badge bg-primary">{{ $feedback->type }}</span>
-                                        <span class="badge bg-secondary">{{ $feedback->priority }}</span>
                                         <span class="badge bg-info">{{ $feedback->status }}</span>
                                     </div>
                                     <h4 class="mb-2">#{{ $feedback->id }} {{ $feedback->title }}</h4>

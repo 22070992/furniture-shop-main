@@ -48,10 +48,8 @@ class StoreVisualFeedbackRequest extends FormRequest
     {
         return [
             'type' => ['required', Rule::in(VisualFeedback::TYPES)],
-            'priority' => ['required', Rule::in(VisualFeedback::PRIORITIES)],
             'title' => ['required', 'string', 'max:180'],
             'description' => ['required', 'string', 'max:10000'],
-            'expected_result' => ['nullable', 'string', 'max:10000'],
             'page_url' => ['required', 'url', 'max:2048'],
             'page_path' => ['nullable', 'string', 'max:512'],
             'page_title' => ['nullable', 'string', 'max:255'],

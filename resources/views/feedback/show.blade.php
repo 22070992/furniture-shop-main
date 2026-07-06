@@ -8,7 +8,6 @@
                 <h1 class="mb-1">#{{ $feedback->id }} {{ $feedback->title }}</h1>
                 <div class="d-flex gap-2 flex-wrap">
                     <span class="badge bg-primary">{{ $feedback->type }}</span>
-                    <span class="badge bg-secondary">{{ $feedback->priority }}</span>
                     <span class="badge bg-info">{{ $feedback->status }}</span>
                 </div>
             </div>
@@ -95,8 +94,6 @@
                     <div class="card-body">
                         <h4>Mô tả</h4>
                         <p>{{ $feedback->description }}</p>
-                        <h4>Kết quả mong muốn</h4>
-                        <p>{{ $feedback->expected_result ?: 'Chưa cung cấp.' }}</p>
                     </div>
                 </div>
 

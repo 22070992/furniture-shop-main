@@ -19,7 +19,6 @@ class UpdateVisualFeedbackRequest extends FormRequest
     {
         return [
             'status' => ['nullable', Rule::in(VisualFeedback::STATUSES)],
-            'priority' => ['nullable', Rule::in(VisualFeedback::PRIORITIES)],
             'type' => ['nullable', Rule::in(VisualFeedback::TYPES)],
             'assigned_to' => ['nullable', 'integer', 'exists:users,user_id'],
             'admin_note' => ['nullable', 'string', 'max:10000'],
