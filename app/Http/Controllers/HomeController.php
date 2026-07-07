@@ -7,13 +7,14 @@ use App\Models\ReceivingReport;
 use App\Models\User;
 use App\Models\VisualFeedback;
 use App\Services\AdminAiService;
+use App\Services\OpenAiChatService;
 use Carbon\Carbon;
 
 class HomeController extends Controller
 {
     //
 
-    public function index(AdminAiService $adminAi)
+    public function index(AdminAiService $adminAi, OpenAiChatService $openAi)
     {
         $sevenDaysAgo = now()->subDays(7);
         $total_orders = Order::whereDate('created_at', '>=', $sevenDaysAgo)
@@ -55,7 +56,7 @@ class HomeController extends Controller
             'new_users' => $new_users,
             'total_revenue' => $total_revenue,
             'total_revenue_30day' => $total_revenue_30day,
-            'ai_summary' => $adminAi->dashboardSummary(),
+            'ai_summary' => $adminAi->dashboardSummary($openAi),
             'feedback_stats' => $feedback_stats,
             'latest_feedbacks' => $latest_feedbacks,
         ];

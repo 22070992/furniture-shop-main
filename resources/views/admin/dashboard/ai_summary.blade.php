@@ -1,5 +1,21 @@
 <div class="admin-ai-summary">
     <div class="admin-ai-headline">{{ $summary['headline'] }}</div>
+    <div class="text-muted small mb-2">
+        Provider:
+        @if (($summary['ai_provider'] ?? 'local') === 'openai')
+            OpenAI API
+        @elseif (($summary['ai_provider'] ?? 'local') === 'local_fallback')
+            Local fallback
+        @else
+            Local rules
+        @endif
+        @if (!empty($summary['ai_model']))
+            · Model: {{ $summary['ai_model'] }}
+        @endif
+        @if (!empty($summary['generated_at']))
+            · Generated: {{ $summary['generated_at'] }}
+        @endif
+    </div>
     <p class="text-muted mb-3">{{ $summary['overview'] }}</p>
 
     <div class="row g-3 mb-3">

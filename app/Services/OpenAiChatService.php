@@ -15,23 +15,25 @@ class OpenAiChatService
         return filled(config('services.openai.api_key'));
     }
 
-    public function reply(string $message, array $history, Collection $products, array $facets = []): string
+    public function complete(array $messages, array $options = []): string
     {
         if (!$this->isConfigured()) {
             throw new RuntimeException('OpenAI API key is not configured.');
         }
+
+        $payload = [
+            'model' => $options['model'] ?? config('services.openai.model', 'gpt-4o-mini'),
+            'messages' => $messages,
+            'temperature' => (float) ($options['temperature'] ?? config('services.openai.temperature', 0.75)),
+            'max_tokens' => (int) ($options['max_tokens'] ?? config('services.openai.max_tokens', 500)),
+        ];
 
         $response = Http::withToken(config('services.openai.api_key'))
             ->acceptJson()
             ->asJson()
             ->timeout((int) config('services.openai.timeout', 20))
             ->retry(1, 300, throw: false)
-            ->post(rtrim((string) config('services.openai.base_url'), '/') . '/chat/completions', [
-                'model' => config('services.openai.model', 'gpt-4o-mini'),
-                'messages' => $this->messages($message, $history, $products, $facets),
-                'temperature' => (float) config('services.openai.temperature', 0.75),
-                'max_tokens' => (int) config('services.openai.max_tokens', 500),
-            ]);
+            ->post(rtrim((string) config('services.openai.base_url'), '/') . '/chat/completions', $payload);
 
         if ($response->failed()) {
             Log::warning('OpenAI chat request failed', [
@@ -49,6 +51,11 @@ class OpenAiChatService
         }
 
         return $content;
+    }
+
+    public function reply(string $message, array $history, Collection $products, array $facets = []): string
+    {
+        return $this->complete($this->messages($message, $history, $products, $facets));
     }
 
     private function messages(string $message, array $history, Collection $products, array $facets): array

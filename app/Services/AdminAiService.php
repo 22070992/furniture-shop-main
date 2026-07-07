@@ -13,8 +13,10 @@ use App\Models\SiteVisit;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AdminAiService
 {
@@ -50,7 +52,7 @@ class AdminAiService
         ];
     }
 
-    public function dashboardSummary(): array
+    public function dashboardSummary(?OpenAiChatService $openAi = null): array
     {
         $now = now();
         $last7Start = $now->copy()->subDays(7);
@@ -91,7 +93,7 @@ class AdminAiService
         $revenueTrend = $this->percentageChange($revenue7, $revenuePrevious7);
         $orderTrend = $this->percentageChange($orders7, $ordersPrevious7);
 
-        return [
+        $summary = [
             'headline' => $this->dashboardHeadline($revenueTrend, $orderTrend, $waitingPayments, $lowStock->count()),
             'overview' => 'AI đang đọc dữ liệu 7 ngày gần nhất để tóm tắt lượt truy cập, doanh thu, đơn hàng, khách mới và tồn kho cần xử lý.',
             'metrics' => [
@@ -154,7 +156,127 @@ class AdminAiService
                 'name' => $detail->product?->name ?? $detail->name,
                 'quantities' => $detail->quantities,
             ])->values(),
+            'ai_provider' => 'local',
+            'ai_model' => null,
+            'generated_at' => $now->toDateTimeString(),
         ];
+
+        if (!$openAi || !$openAi->isConfigured()) {
+            $summary['ai_note'] = 'OpenAI API chưa được cấu hình cho dashboard summary, đang dùng local rules.';
+
+            return $summary;
+        }
+
+        try {
+            return $this->openAiDashboardSummary($summary, $openAi);
+        } catch (Throwable $exception) {
+            Log::warning('OpenAI dashboard summary failed; using local fallback.', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            $summary['ai_provider'] = 'local_fallback';
+            $summary['ai_model'] = config('services.openai.model', 'gpt-4o-mini');
+            $summary['ai_note'] = 'OpenAI API lỗi nên dashboard đang hiển thị bản local fallback.';
+
+            return $summary;
+        }
+    }
+
+    private function openAiDashboardSummary(array $summary, OpenAiChatService $openAi): array
+    {
+        $payload = [
+            'generated_at' => now()->toIso8601String(),
+            'metrics' => $summary['metrics'],
+            'local_headline' => $summary['headline'],
+            'local_insights' => $summary['insights'],
+            'local_actions' => $summary['actions'],
+            'top_products' => $summary['top_products'],
+            'low_stock' => $summary['low_stock'],
+        ];
+
+        $content = $openAi->complete([
+            [
+                'role' => 'system',
+                'content' => implode("\n", [
+                    'You are Furemir AI, an admin dashboard analyst for a Laravel furniture e-commerce website.',
+                    'Use only the dashboard data provided by the backend. Do not invent revenue, orders, stock, customer counts, product names, or payment status.',
+                    'Write in Vietnamese for the store admin.',
+                    'Return valid JSON only, without markdown fences.',
+                    'Required JSON keys: headline, overview, insights, actions.',
+                    'headline: one concise sentence.',
+                    'overview: one short paragraph explaining the current dashboard situation.',
+                    'insights: array of 3 to 5 concise strings.',
+                    'actions: array of 3 to 5 concrete recommended admin actions.',
+                ]),
+            ],
+            [
+                'role' => 'user',
+                'content' => 'Rewrite this dashboard summary for the admin using the newest data JSON: '
+                    . json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ],
+        ], [
+            'temperature' => 0.7,
+            'max_tokens' => 700,
+        ]);
+
+        $ai = $this->parseDashboardAiJson($content);
+
+        $summary['headline'] = $this->cleanAiText($ai['headline'] ?? '', $summary['headline'], 180);
+        $summary['overview'] = $this->cleanAiText($ai['overview'] ?? '', $summary['overview'], 320);
+        $summary['insights'] = $this->cleanAiList($ai['insights'] ?? [], $summary['insights'], 5, 220);
+        $summary['actions'] = $this->cleanAiList($ai['actions'] ?? [], $summary['actions'], 5, 220);
+        $summary['ai_provider'] = 'openai';
+        $summary['ai_model'] = config('services.openai.model', 'gpt-4o-mini');
+        $summary['ai_note'] = 'Generated with the same OpenAI Chat Completions API configuration used by the chatbox.';
+        $summary['generated_at'] = now()->toDateTimeString();
+
+        return $summary;
+    }
+
+    private function parseDashboardAiJson(string $content): array
+    {
+        $json = trim($content);
+
+        if (preg_match('/```(?:json)?\s*(.*?)\s*```/is', $json, $matches)) {
+            $json = trim($matches[1]);
+        } elseif (preg_match('/\{.*\}/s', $json, $matches)) {
+            $json = $matches[0];
+        }
+
+        $decoded = json_decode($json, true);
+
+        if (!is_array($decoded)) {
+            throw new \RuntimeException('OpenAI dashboard summary returned invalid JSON.');
+        }
+
+        return $decoded;
+    }
+
+    private function cleanAiText(mixed $value, string $fallback, int $limit): string
+    {
+        $text = trim(strip_tags((string) $value));
+
+        if ($text === '') {
+            return $fallback;
+        }
+
+        return Str::limit($text, $limit, '');
+    }
+
+    private function cleanAiList(mixed $items, array $fallback, int $maxItems, int $limit): array
+    {
+        if (!is_array($items)) {
+            return $fallback;
+        }
+
+        $clean = collect($items)
+            ->map(fn ($item) => $this->cleanAiText($item, '', $limit))
+            ->filter()
+            ->take($maxItems)
+            ->values()
+            ->all();
+
+        return $clean !== [] ? $clean : $fallback;
     }
 
     public function catalogQualityTextReview(Product $product): array

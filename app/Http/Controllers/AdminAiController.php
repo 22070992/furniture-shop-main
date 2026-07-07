@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AdminAiService;
+use App\Services\OpenAiChatService;
 use Illuminate\Http\Request;
 
 class AdminAiController extends Controller
@@ -20,8 +21,8 @@ class AdminAiController extends Controller
         return response()->json($adminAi->generateProductContent($validated));
     }
 
-    public function dashboardSummary(AdminAiService $adminAi)
+    public function dashboardSummary(AdminAiService $adminAi, OpenAiChatService $openAi)
     {
-        return response()->json($adminAi->dashboardSummary());
+        return response()->json($adminAi->dashboardSummary($openAi));
     }
 }

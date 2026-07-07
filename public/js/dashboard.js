@@ -381,10 +381,21 @@ jQuery.noConflict();
             const actions = (summary.actions || [])
                 .map((action) => `<div class="admin-ai-list-item">${escapeHtml(action)}</div>`)
                 .join('');
+            const providerLabel =
+                summary.ai_provider === 'openai'
+                    ? 'OpenAI API'
+                    : summary.ai_provider === 'local_fallback'
+                      ? 'Local fallback'
+                      : 'Local rules';
+            const modelLabel = summary.ai_model ? ` · Model: ${escapeHtml(summary.ai_model)}` : '';
+            const generatedLabel = summary.generated_at ? ` · Generated: ${escapeHtml(summary.generated_at)}` : '';
 
             $('#ai-dashboard-content').html(`
                 <div class="admin-ai-summary">
                     <div class="admin-ai-headline">${escapeHtml(summary.headline)}</div>
+                    <div class="text-muted small mb-2">
+                        Provider: ${providerLabel}${modelLabel}${generatedLabel}
+                    </div>
                     <p class="text-muted mb-3">${escapeHtml(summary.overview)}</p>
                     <div class="row g-3 mb-3">${metrics}</div>
                     <div class="row g-3">
